@@ -15,9 +15,14 @@ public class Product {
 
     @JoinColumn(name = "business_id")
     private UUID business_id;
+
+    @Column
     private String category;
-    private int stock_count;
+    @Column
+    private int quantity;
+    @Column
     private double price;
+    @Column
     private String imageURI;
 
     public Product() {}
@@ -25,13 +30,13 @@ public class Product {
     public Product(int id, String category, int stock_count, double price) {
         this.id = id;
         this.category = category;
-        this.stock_count = stock_count;
+        this.quantity = stock_count;
         this.price = price;
 
     }
 
     public Product(Product product) {
-        this(product.id, product.category, product.stock_count, product.price);
+        this(product.id, product.category, product.quantity, product.price);
     }
 
 
@@ -46,7 +51,7 @@ public class Product {
     }
 
     public int getStockCount() {
-        return stock_count;
+        return quantity;
     }
 
     public double getPrice() {
@@ -57,7 +62,7 @@ public class Product {
     // setters
 
     public void setStockCount(int stock_count) {
-        this.stock_count = stock_count;
+        this.quantity = stock_count;
     }
 
     public void setPrice(float price) {
@@ -73,7 +78,7 @@ public class Product {
     @Override
     public String toString() {
         return "Product [id=" + id + ", description=" + ", category=" + category + ", stock_count="
-                + stock_count + ", price=" + price + "]";
+                + quantity + ", price=" + price + "]";
     }
 
     // equals

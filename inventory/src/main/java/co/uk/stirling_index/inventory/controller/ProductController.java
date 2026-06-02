@@ -10,6 +10,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @CrossOrigin
@@ -40,7 +41,21 @@ public class ProductController {
     }
 
     @GetMapping("business/{businessId}")
-    EntityModel<Product> getAllProductsFromBusiness(@PathVariable Long businessId) {
+    CollectionModel<EntityModel<Product>> getAllProductsFromBusinessWithFilter(@PathVariable Long businessId, @RequestParam String filter) {
+        List<Product> products = productService.getAllProductsByBusinessId(businessId);
+
+
+        List<Product> filteredProducts = new ArrayList<>();
+
+        for (Product product : products) {
+
+        }
+
+        return null;
+    }
+
+    @GetMapping("business/{businessId}")
+    CollectionModel<EntityModel<Product>> getAllProductsFromBusiness(@PathVariable Long businessId) {
         List<Product> products = productService.getAllProductsByBusinessId(businessId);
         return null;
     }

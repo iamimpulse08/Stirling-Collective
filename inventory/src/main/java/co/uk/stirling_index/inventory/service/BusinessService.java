@@ -10,11 +10,11 @@ public class BusinessService {
     private final BusinessRepository businessRepository;
 
     public boolean isBusinessValid(Business business) throws IllegalArgumentException {
-        if (business == null || business.getId().toString().isEmpty() || business.getName() == null || business.getEmail() == null) {
+        if (business == null || business.getBusiness_id().toString().isEmpty() || business.getName() == null || business.getEmail() == null) {
             throw new IllegalArgumentException("Business is null, or ID, name or email is invalid" + business);
         }
 
-        return businessRepository.existsByUUID(business.getId());
+        return businessRepository.existsByUUID(business.getBusiness_id());
     }
 
     public BusinessService(BusinessRepository businessRepository) {

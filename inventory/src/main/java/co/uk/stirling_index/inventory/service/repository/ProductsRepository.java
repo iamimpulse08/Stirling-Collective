@@ -13,5 +13,10 @@ public interface ProductsRepository extends JpaRepository<Product, Integer> {
 
     Product findProductById(Integer id);
 
+
+    @Query("SELECT * FROM products WHERE business_id = :business_id")
     List<Product> findProductsByBusiness_id(Long business_id);
+
+    List<Product> findAllProductsByBusiness_name(String business_name);
+
 }

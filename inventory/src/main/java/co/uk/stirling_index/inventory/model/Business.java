@@ -5,19 +5,25 @@ import jakarta.persistence.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "businesses")
+@Table(name = "Businesses")
 public class Business {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    private UUID business_id;
 
+    @Column
     private String name;
+
+    @Column
     private String address;
 
+    @Column
+    private String postcode;
 
-    public UUID getId() {
-        return id;
+
+    public UUID getBusiness_id() {
+        return business_id;
     }
 
     public String getName() {

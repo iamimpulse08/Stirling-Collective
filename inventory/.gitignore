@@ -36,6 +36,6 @@ build/
 /inventory/src/main/resources/*
 inventory/src/main/resources/*
 .env
-./inventory/src/main/resources/application.yaml
-./inventory/src/main/resources/application-dev.yaml
-./inventory/src/main/resources/application-azure.yaml
+inventory/src/main/resources/application.yaml
+inventory/src/main/resources/application-dev.yaml
+inventory/src/main/resources/application-azure.yaml

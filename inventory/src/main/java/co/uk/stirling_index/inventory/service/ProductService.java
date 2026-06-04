@@ -67,11 +67,6 @@ public class ProductService {
     public List<Product> getAllProductsByBusinessId(Long businessId) {
         // custom query where business_id = businessId
 
-        return productsRepository.findProductsByBusiness_id(businessId);
-    }
-
-    public List<Product> getAllProductsByBusinessName(String businessName) {
-
-        return productsRepository.findAllProductsByBusiness_name(businessName);
+        return productsRepository.findProductsByBusinessId(businessId);
     }
 }

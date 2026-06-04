@@ -1,29 +1,50 @@
 package co.uk.stirling_index.inventory.model;
 
-import jakarta.persistence.*;
+import jakarta.annotation.Generated;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.UUID;
 
-@Entity
-@Table(name = "Businesses")
+@Table(name = "businesses")
 public class Business {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID business_id;
-
-    @Column
+    private int id;
     private String name;
-
-    @Column
+    private String email;
     private String address;
-
-    @Column
     private String postcode;
+    private String phone;
+    private String website;
+    private String logoURI;
 
 
-    public UUID getBusiness_id() {
-        return business_id;
+    public Business() {}
+
+    public Business(Business business) {
+        this.id = business.id;
+        this.name = business.name;
+        this.address = business.address;
+        this.postcode = business.postcode;
+        this.phone = business.phone;
+        this.email = business.email;
+        this.website = business.website;
+        this.logoURI = business.logoURI;
+    }
+
+    public Business(String name, String address, String postcode, String email, String phone) {
+        this.name = name;
+        this.address = address;
+        this.postcode = postcode;
+        this.phone = phone;
+        this.email = email;
+        this.website = "";
+        this.logoURI = "";
+    }
+
+    public int getBusiness_id() {
+        return id;
     }
 
     public String getName() {
@@ -74,10 +95,6 @@ public class Business {
         this.logoURI = logoURI;
     }
 
-    private String phone;
-    private String email;
-    private String website;
-    private String logoURI;
 
 
 

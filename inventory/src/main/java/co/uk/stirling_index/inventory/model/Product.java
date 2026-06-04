@@ -1,44 +1,46 @@
 package co.uk.stirling_index.inventory.model;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.hateoas.server.core.Relation;
 
 import java.util.Objects;
 import java.util.UUID;
 
-@Entity
 @Table(name = "products")
 public class Product {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+    private int businessId;
 
-    @JoinColumn(name = "business_id")
-    private UUID business_id;
-
-    @Column
+    private String name;
     private String category;
-    @Column
     private int quantity;
-    @Column
     private double price;
-    @Column
     private String imageURI;
 
     public Product() {}
 
-    public Product(int id, String category, int stock_count, double price) {
-        this.id = id;
-        this.category = category;
-        this.quantity = stock_count;
-        this.price = price;
-
-    }
-
     public Product(Product product) {
-        this(product.id, product.category, product.quantity, product.price);
+        this.id = product.id;
+        this.businessId = product.businessId;
+        this.name = product.name;
+        this.category = product.category;
+        this.quantity = product.quantity;
+        this.price = product.price;
+        this.imageURI = product.imageURI;
     }
 
+    public Product(String name, int businessId, String category, int quantity, double price, String imageURI) {
+        this.name = name;
+        this.businessId = businessId;
+        this.category = category;
+        this.quantity = quantity;
+        this.price = price;
+        this.imageURI = imageURI;
+    }
 
     // getters
 

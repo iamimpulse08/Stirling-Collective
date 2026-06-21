@@ -45,7 +45,7 @@ public class Business {
         this.logo_uri = "";
     }
 
-    public int getBusiness_id() {
+    public Integer getBusiness_id() {
         return id;
     }
 

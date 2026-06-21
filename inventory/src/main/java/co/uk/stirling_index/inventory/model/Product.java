@@ -20,8 +20,8 @@ public class Product {
 
     private String name;
     private String category;
-    private int quantity;
-    private long price;
+    private Integer quantity;
+    private Long price;
     private String image_uri;
 
     public Product() {}
@@ -36,7 +36,7 @@ public class Product {
         this.image_uri = product.image_uri;
     }
 
-    public Product(String name, int business_id, String category, int quantity, long price, String image_uri) {
+    public Product(String name, Integer business_id, String category, Integer quantity, Long price, String image_uri) {
         this.name = name;
         this.business_id = business_id;
         this.category = category;

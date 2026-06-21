@@ -28,8 +28,20 @@ public class ProductService {
         return !productsRepository.existsById(product.getId());
     }
 
-    public Product addProduct(ProductCreationRequest request, int businessId) {
+    public Product addProduct(ProductCreationRequest request, Integer businessId) {
         // if the product is null or id is invalid, return
+        if (request == null || businessId == null || businessId < 0) {
+            throw new IllegalArgumentException("Product is null, or ID is invalid" + request);
+        }
+        else if (!request.hasAllRequiredFields()) {
+            throw new IllegalArgumentException("Product is missing required fields" + request);
+        }
+        else if (request.getPrice() < 0) {
+            throw new IllegalArgumentException("Product price is invalid" + request);
+        }
+        else if (request.getQuantity() < 0) {
+            throw new IllegalArgumentException("Product quantity is invalid" + request);
+        }
 
         Product product = new Product();
         product.setName(request.getName());
@@ -38,10 +50,7 @@ public class ProductService {
         product.setQuantity(request.getQuantity());
         product.setPrice(request.getPrice());
 
-
-
-        Product saved = productsRepository.save(product);
-        return saved;
+        return productsRepository.save(product);
     }
 
     public Product updateProduct(Product product, Long businessId) {
@@ -61,20 +70,24 @@ public class ProductService {
         productsRepository.delete(product);
     }
 
-    public void deleteProductById(int id, Long businessId) {
+    public void deleteProductById(Integer id, Long businessId) {
 
-        if (id < 0) {
+        if (id == null || id < 0) {
             throw new IllegalArgumentException("ID is invalid" + id);
         }
 
         productsRepository.deleteById(id);
     }
 
-    public Product getProductById(int id) {
+    public Product getProductById(Integer id) {
         return productsRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Product with ID " + id + " not found"));
     }
 
     public List<Product> getAllProducts() {
         return productsRepository.findAll();
+    }
+
+    public List<Product> getAllProducts(Integer businessId) {
+        return productsRepository.findAllByBusiness_id(businessId);
     }
 }

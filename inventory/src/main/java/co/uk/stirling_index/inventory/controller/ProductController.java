@@ -38,13 +38,17 @@ public class ProductController {
     }
 
     @GetMapping("{productID}")
-    public EntityModel<Product> getProduct(@PathVariable Integer productID) {
-        return null;
+    public ResponseEntity<EntityModel<Product>> getProduct(@PathVariable Integer productID) {
+        Product product = productService.getProductById(productID);
+
+        return new ResponseEntity<>(productAssembler.toModel(product), HttpStatus.OK);
     }
 
     @GetMapping("business/{businessId}")
-    CollectionModel<EntityModel<Product>> getAllProductsFromBusiness(@PathVariable int businessId) {
-        return null;
+    ResponseEntity<CollectionModel<EntityModel<Product>>> getAllProductsFromBusiness(@PathVariable Integer businessId) {
+        List<Product> products = productService.getAllProducts(businessId);
+
+        return new ResponseEntity<>(productAssembler.toCollectionModel(products), HttpStatus.OK);
     }
 
     /**
@@ -62,19 +66,18 @@ public class ProductController {
     }
 
     @PutMapping("business/{businessId}/{productID}")
-    @ResponseStatus(value = org.springframework.http.HttpStatus.OK)
-    public EntityModel<Product> updateProduct(@PathVariable Long businessId, @RequestBody Product product) {
+    public ResponseEntity<EntityModel<Product>> updateProduct(@PathVariable Long businessId, @RequestBody Product product) {
         Product saved = productService.updateProduct(product, businessId);
         logger.info("Business with ID: {}  UPDATED Product with ID: {} ", businessId, product.getId());
-        return productAssembler.toModel(saved);
+        return new ResponseEntity<>(productAssembler.toModel(saved), HttpStatus.OK);
     }
 
 
     @DeleteMapping("business/{businessId}/{productID}")
-    @ResponseStatus(value = org.springframework.http.HttpStatus.OK)
-    public void deleteProduct(@PathVariable Long businessId, @PathVariable String productID) {
+    public ResponseEntity<?> deleteProduct(@PathVariable Long businessId, @PathVariable String productID) {
         // TODO Perhaps this function could return either 204, no content, or link back to the products page for the business?
         productService.deleteProductById(Integer.parseInt(productID), businessId);
         logger.info("Business with ID: {}  DELETED Product with ID: {} ", businessId, productID);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }

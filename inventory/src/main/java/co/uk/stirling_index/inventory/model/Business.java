@@ -1,23 +1,25 @@
 package co.uk.stirling_index.inventory.model;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
-import jakarta.annotation.Generated;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Table;
-
-import java.util.UUID;
-
+@Getter
+@Setter
 @Table(name = "businesses")
+@Entity
 public class Business {
 
     @Id
-    private int id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
     private String name;
     private String email;
     private String address;
     private String postcode;
     private String phone;
     private String website;
-    private String logoURI;
+    private String logo_uri;
 
 
     public Business() {}
@@ -30,7 +32,7 @@ public class Business {
         this.phone = business.phone;
         this.email = business.email;
         this.website = business.website;
-        this.logoURI = business.logoURI;
+        this.logo_uri = business.logo_uri;
     }
 
     public Business(String name, String address, String postcode, String email, String phone) {
@@ -40,60 +42,13 @@ public class Business {
         this.phone = phone;
         this.email = email;
         this.website = "";
-        this.logoURI = "";
+        this.logo_uri = "";
     }
 
     public int getBusiness_id() {
         return id;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getWebsite() {
-        return website;
-    }
-
-    public void setWebsite(String website) {
-        this.website = website;
-    }
-
-    public String getLogoURI() {
-        return logoURI;
-    }
-
-    public void setLogoURI(String logoURI) {
-        this.logoURI = logoURI;
-    }
 
 
 

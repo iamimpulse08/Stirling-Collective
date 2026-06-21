@@ -2,7 +2,7 @@
 <project version="4">
   <component name="PersistenceUnitSettings">
     <persistence-units>
-      <persistence-unit moduleName="inventory" name="inventory" framework="Spring Data JDBC" ormUnit="inventory" defaultDataSourceId="aa164221-12c6-477a-9239-235e3fd3335f" />
+      <persistence-unit moduleName="inventory" name="inventory" framework="Spring Data JDBC" ormUnit="inventory" defaultDataSourceId="9e6bb2f9-1b1c-49ee-b7fb-473ae0167d56" />
     </persistence-units>
   </component>
 </project>

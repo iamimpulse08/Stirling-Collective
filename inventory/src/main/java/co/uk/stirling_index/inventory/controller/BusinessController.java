@@ -33,23 +33,16 @@ public class BusinessController {
      * Businesses
      */
     @PostMapping()
-    public void addBusiness() {}
+    public void addBusiness() {
+
+    }
 
     @PutMapping("{businessID}")
-    public void updateBusiness(@PathVariable String businessID) {}
+    public void updateBusiness(@PathVariable String businessID) {
+    }
 
     @DeleteMapping("{businessID}")
-    public void deleteBusiness(@PathVariable String businessID) {}
-
-    /**
-     * Categories
-     */
-    @PostMapping("category")
-    public void createCategory() {}
-
-    @PutMapping("category")
-    public void updateCategory() {}
-
-    @DeleteMapping("category")
-    public void deleteCategory() {}
+    public void deleteBusiness(@PathVariable String businessID) {
+    }
 }
+

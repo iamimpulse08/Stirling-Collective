@@ -1,10 +1,13 @@
 package co.uk.stirling_index.inventory.service;
 
+import co.uk.stirling_index.inventory.model.DTO.ProductCreationRequest;
 import co.uk.stirling_index.inventory.model.Product;
+import co.uk.stirling_index.inventory.service.assemblers.ProductAssembler;
 import co.uk.stirling_index.inventory.service.repository.ProductsRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 public class ProductService {
@@ -12,7 +15,7 @@ public class ProductService {
     private final ProductsRepository productsRepository;
     private final BusinessService businessService;
 
-    public ProductService(ProductsRepository productsRepository, BusinessService businessService) {
+    public ProductService(ProductsRepository productsRepository, BusinessService businessService, ProductAssembler productAssembler) {
         this.productsRepository = productsRepository;
         this.businessService = businessService;
     }
@@ -25,17 +28,24 @@ public class ProductService {
         return !productsRepository.existsById(product.getId());
     }
 
-    public Product addProduct(Product product, Long businessId) {
+    public Product addProduct(ProductCreationRequest request, int businessId) {
         // if the product is null or id is invalid, return
-        if (!isProductIdValid(product)) {
-            throw new IllegalArgumentException("Product is null, or ID is invalid" + product);
-        }
 
-        return productsRepository.save(product);
+        Product product = new Product();
+        product.setName(request.getName());
+        product.setBusiness_id(businessId);
+        product.setCategory(request.getCategory());
+        product.setQuantity(request.getQuantity());
+        product.setPrice(request.getPrice());
+
+
+
+        Product saved = productsRepository.save(product);
+        return saved;
     }
 
     public Product updateProduct(Product product, Long businessId) {
-        if (!isProductIdValid(product)) {
+        if (isProductIdValid(product)) {
             throw new IllegalArgumentException("Product is null, or ID is invalid" + product);
         }
 
@@ -45,7 +55,7 @@ public class ProductService {
     }
 
     public void deleteProduct(Product product) {
-        if (!isProductIdValid(product)) {
+        if (isProductIdValid(product)) {
             throw new IllegalArgumentException("Product is null, or ID is invalid" + product);
         }
         productsRepository.delete(product);
@@ -60,13 +70,11 @@ public class ProductService {
         productsRepository.deleteById(id);
     }
 
-    public void getAllProducts() {
-        productsRepository.findAll();
+    public Product getProductById(int id) {
+        return productsRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Product with ID " + id + " not found"));
     }
 
-    public List<Product> getAllProductsByBusinessId(Long businessId) {
-        // custom query where business_id = businessId
-
-        return productsRepository.findProductsByBusinessId(businessId);
+    public List<Product> getAllProducts() {
+        return productsRepository.findAll();
     }
 }

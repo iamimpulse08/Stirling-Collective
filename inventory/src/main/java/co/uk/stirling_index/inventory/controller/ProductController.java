@@ -1,5 +1,6 @@
 package co.uk.stirling_index.inventory.controller;
 
+import co.uk.stirling_index.inventory.model.DTO.ProductCreationRequest;
 import co.uk.stirling_index.inventory.model.Product;
 import co.uk.stirling_index.inventory.service.assemblers.ProductAssembler;
 import co.uk.stirling_index.inventory.service.ProductService;
@@ -7,15 +8,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 @CrossOrigin
 @RestController
-@RequestMapping("api/products")
+@RequestMapping("api/products/")
 public class ProductController {
 
     private final Logger logger = LoggerFactory.getLogger(ProductController.class);
@@ -29,34 +30,20 @@ public class ProductController {
 
 
     @GetMapping
-    public CollectionModel<EntityModel<Product>> getAllProducts() {
-        List<Product> allProducts = new ArrayList<>();
-        return null;
-        // CollectionModel.of(products); # (, linkTo(methodOn(Products.class).getProduct(0)).withSelfRel())
+    public ResponseEntity<CollectionModel<EntityModel<Product>>> getAllProducts() {
+        List<Product> products = productService.getAllProducts();
+        CollectionModel<EntityModel<Product>> collectionModel = productAssembler.toCollectionModel(products);
+
+        return new ResponseEntity<>(collectionModel, HttpStatus.OK);
     }
 
     @GetMapping("{productID}")
-    public EntityModel<Product> getProduct(@PathVariable String productID) {
+    public EntityModel<Product> getProduct(@PathVariable Integer productID) {
         return null;
     }
 
     @GetMapping("business/{businessId}")
-    CollectionModel<EntityModel<Product>> getAllProductsFromBusinessWithFilter(@PathVariable Long businessId, @RequestParam String filter) {
-        List<Product> products = productService.getAllProductsByBusinessId(businessId);
-
-
-        List<Product> filteredProducts = new ArrayList<>();
-
-        for (Product product : products) {
-
-        }
-
-        return null;
-    }
-
-    @GetMapping("business/{businessId}")
-    CollectionModel<EntityModel<Product>> getAllProductsFromBusiness(@PathVariable Long businessId) {
-        List<Product> products = productService.getAllProductsByBusinessId(businessId);
+    CollectionModel<EntityModel<Product>> getAllProductsFromBusiness(@PathVariable int businessId) {
         return null;
     }
 
@@ -66,11 +53,12 @@ public class ProductController {
 
     // TODO Require correct business credentials + OAuth ?
     @PostMapping("business/{businessId}")
-    @ResponseStatus(value = org.springframework.http.HttpStatus.CREATED)
-    public EntityModel<Product> addProduct(@PathVariable Long businessId, @RequestBody Product product) {
-        Product saved = productService.addProduct(product, businessId);
-        logger.info("Business with ID: {}  ADDED Product with ID: {} ", businessId, product.getId());
-        return productAssembler.toModel(saved);
+    public ResponseEntity<EntityModel<Product>> addProduct(
+            @PathVariable int businessId,
+            @RequestBody ProductCreationRequest request) {
+        Product saved = productService.addProduct(request, businessId);
+        logger.info("Business with ID: {}  ADDED Product with ID: {} ", businessId, saved.getId());
+        return new ResponseEntity<>(productAssembler.toModel(saved), HttpStatus.CREATED);
     }
 
     @PutMapping("business/{businessId}/{productID}")
@@ -89,6 +77,4 @@ public class ProductController {
         productService.deleteProductById(Integer.parseInt(productID), businessId);
         logger.info("Business with ID: {}  DELETED Product with ID: {} ", businessId, productID);
     }
-
-
 }

@@ -50,6 +50,11 @@ class InventoryProductControllerTest {
 	final int noOfProducts = 2;
 	final int noOfBusinesses = 2;
 
+	// fake IDs for consistent test case logic.
+	final static Integer NON_EXISTENT_BUSINESS_ID = 1;
+	final static Integer NON_EXISTENT_PRODUCT_ID = 1;
+
+
 
 	/**
 	 * Checks that the connection to the database is established.
@@ -93,8 +98,8 @@ class InventoryProductControllerTest {
 		business1 = businessRepository.save(business1);
 		business2 = businessRepository.save(business2);
 
-		Product product1 = new Product("milk", business1.getBusiness_id(), "food", 10, 299L, "abc");
-		Product product2 = new Product("bread", business2.getBusiness_id(), "food", 15, 399L, "abc");
+		Product product1 = new Product("milk", business1, "food", 10, 299L, "abc");
+		Product product2 = new Product("bread", business2, "food", 15, 399L, "abc");
 
         productsRepository.save(product1);
         productsRepository.save(product2);
@@ -112,8 +117,10 @@ class InventoryProductControllerTest {
 		productCreationRequest.setQuantity(10);
 		productCreationRequest.setPrice(299L);
 
+		String URI = String.format("/api/products/business/%d", businessRepository.findAll().getFirst().getBusiness_id());
+
 		var responseBody = restTestClient.post()
-				.uri("/api/products/business/" + businessRepository.findAll().getFirst().getBusiness_id())
+				.uri(URI)
 				.body(productCreationRequest)
 				.exchange()
 				.expectStatus().isCreated()
@@ -135,12 +142,15 @@ class InventoryProductControllerTest {
 		productCreationRequest.setCategory("food");
 		productCreationRequest.setQuantity(10);
 
+		String URI = String.format("/api/products/business/%d", businessRepository.findAll().getFirst().getBusiness_id());
+
 		// Missing price post-request, expects 400 Bad Request
 		restTestClient.post()
-				.uri("/api/products/business/" + businessRepository.findAll().getFirst().getBusiness_id())
+				.uri(URI)
 				.body(productCreationRequest)
 				.exchange()
-				.expectStatus().isBadRequest();
+				.expectStatus()
+				.isBadRequest();
 	}
 
 	/**
@@ -154,8 +164,10 @@ class InventoryProductControllerTest {
 		productCreationRequest.setQuantity(10);
 		productCreationRequest.setPrice(299L);
 
+		String URI = String.format("/api/products/business/%d", NON_EXISTENT_BUSINESS_ID);
+
 		restTestClient.post()
-				.uri("/api/products/business/1234567890")
+				.uri(URI)
 				.body(productCreationRequest)
 				.exchange()
 				.expectStatus()
@@ -164,21 +176,26 @@ class InventoryProductControllerTest {
 
 	/**
 	 * A test for retrieving a product from a specific business from the api/products/business/{business_id} root.
+	 *
+	 * This checks for one product against a known list of products from this business which is of length 1.
 	 */
 	@Test
 	void retrieveProductFromBusiness() {
+
+		String URI = String.format("/api/products/business/%d", businessRepository.findAll().getFirst().getBusiness_id());
+
 		var responseBody = restTestClient.get()
-				.uri("/api/products/business/" + businessRepository.findAll().getFirst().getBusiness_id())
+				.uri(URI)
 				.exchange()
 				.expectStatus().isOk()
 				.expectHeader()
 				.contentTypeCompatibleWith("application/hal+json")
 				.expectBody()
-				.jsonPath("$._embedded.productList.length()").isEqualTo(1);
+				.jsonPath("$._embedded.productList.length()")
+				.isEqualTo(1);
 
 
 		assertNotNull(responseBody);
-		System.out.println(responseBody.json(""));
 	}
 
 	/**
@@ -186,14 +203,19 @@ class InventoryProductControllerTest {
 	 */
 	@Test
 	void retrieveAllProducts() {
+
+		String URI = "/api/products";
+
 		var responseBody = restTestClient.get()
-				.uri("/api/products/")
+				.uri(URI)
 				.exchange()
-				.expectStatus().isOk()
+				.expectStatus()
+				.isOk()
 				.expectHeader()
 				.contentTypeCompatibleWith("application/hal+json")
 				.expectBody()
-				.jsonPath("$._embedded.productList.length()").isEqualTo(2);
+				.jsonPath("$._embedded.productList.length()")
+				.isEqualTo(2);
 
 		assertNotNull(responseBody);
 	}
@@ -205,14 +227,16 @@ class InventoryProductControllerTest {
 	void retrieveProductById() {
 		Product product = productsRepository.findAll().getFirst();
 
+		String URI = String.format("/api/products/%d", product.getId());
 		var responseBody = restTestClient.get()
-				.uri("/api/products/" + product.getId())
+				.uri(URI)
 				.exchange()
 				.expectStatus().isOk()
 				.expectHeader()
 				.contentTypeCompatibleWith("application/hal+json")
 				.expectBody()
-				.jsonPath("$.id").isEqualTo(product.getId());
+				.jsonPath("$.id")
+				.isEqualTo(product.getId());
 
 		assertNotNull(responseBody);
 	}
@@ -222,8 +246,11 @@ class InventoryProductControllerTest {
 	 */
 	@Test
 	void retrieveProductByIdWithInvalidId() {
+
+		String URI = String.format("/api/products/%d", NON_EXISTENT_PRODUCT_ID);
+
 		var responseBody = restTestClient.get()
-				.uri("/api/products/1234567890")
+				.uri(URI)
 				.exchange()
 				.expectStatus()
 				.isNotFound();
@@ -236,19 +263,23 @@ class InventoryProductControllerTest {
 	@Test
 	 void updateProduct() {
 		Product product = productsRepository.findAll().getFirst();
-		Integer businessId = businessRepository.findAll().getFirst().getBusiness_id();
+		Integer businessId = product.getBusiness().getBusiness_id();
 
 		ProductDetailUpdate detailUpdate = new ProductDetailUpdate();
 		detailUpdate.setName("milk");
 		detailUpdate.setCategory("food");
 		detailUpdate.setQuantity(25);
 		detailUpdate.setPrice(1400L);
+		detailUpdate.setId(product.getId());
+
+		String URI = String.format("/api/products/business/%d/%d", businessId, product.getId());
 
 		restTestClient.put()
-				.uri("/api/products/business/" + businessId + "/" + product.getId())
+				.uri(URI)
 				.body(detailUpdate)
 				.exchange()
-				.expectStatus().isOk();
+				.expectStatus()
+				.isOk();
 	}
 
 	/**
@@ -263,12 +294,14 @@ class InventoryProductControllerTest {
 		detailUpdate.setPrice(1400L);
 
 		Integer businessId = businessRepository.findAll().getFirst().getBusiness_id();
+		String URI = String.format("/api/products/business/%d/%d", businessId, NON_EXISTENT_PRODUCT_ID);
 
 		restTestClient.put()
-				.uri("/api/products/business/" + businessId + "/1234567890")
+				.uri(URI)
 				.body(detailUpdate)
 				.exchange()
-				.expectStatus().isNotFound();
+				.expectStatus()
+				.isNotFound();
 	}
 
 	/**
@@ -285,11 +318,14 @@ class InventoryProductControllerTest {
 		detailUpdate.setQuantity(25);
 		detailUpdate.setPrice(1400L);
 
+		String URI = String.format("/api/products/business/%d/%d", NON_EXISTENT_BUSINESS_ID, productId);
+
 		restTestClient.put()
-				.uri("/api/products/business/1234567890/" + productId)
+				.uri(URI)
 				.body(detailUpdate)
 				.exchange()
-				.expectStatus().isNotFound();
+				.expectStatus()
+				.isNotFound();
 	}
 
 	/**
@@ -306,18 +342,64 @@ class InventoryProductControllerTest {
 		detailUpdate.setQuantity(product.getQuantity());
 		detailUpdate.setCategory(product.getCategory());
 		detailUpdate.setName(product.getName());
+		detailUpdate.setId(productId);
 
+		String URI = String.format("/api/products/business/%d/%d", businessId, productId);
 
 		restTestClient.put()
-				.uri("/api/products/business/" + businessId + "/" + productId)
+				.uri(URI)
 				.body(detailUpdate)
 				.exchange()
-				.expectStatus().isBadRequest();
+				.expectStatus()
+				.isBadRequest();
 	}
 
+	/**
+	 * Tests that a product can be deleted from a business.
+	 *
+	 * First check tests valid product ID and business ID, then checks that the product is deleted.
+	 * Second check tests invalid product ID, then checks that the product is not deleted, returns NOT_FOUND: 404.
+	 */
 	@Test
 	void deleteProduct() {
 
+		Product product = productsRepository.findAll().getFirst();
+		Integer businessId = product.getBusiness().getBusiness_id();
+		Integer productId = product.getId();
+
+		String URI = String.format("/api/products/business/%d/%d", businessId, productId);
+
+		restTestClient.delete()
+				.uri(URI)
+				.exchange()
+				.expectStatus()
+				.isOk();
 	}
 
+	@Test
+	void deleteProductWithInvalidProductId() {
+		Integer businessId = businessRepository.findAll().getFirst().getBusiness_id();
+
+		String URI = String.format("/api/products/business/%d/%d", businessId, NON_EXISTENT_PRODUCT_ID);
+
+		restTestClient.delete()
+				.uri(URI)
+				.exchange()
+				.expectStatus()
+				.isNotFound();
+	}
+
+	@Test
+	void deleteProductWithInvalidBusinessId() {
+		Product product = productsRepository.findAll().getFirst();
+		Integer productId = product.getId();
+
+		String URI = String.format("/api/products/business/%d/%d", NON_EXISTENT_BUSINESS_ID, productId);
+
+		restTestClient.delete()
+				.uri(URI)
+				.exchange()
+				.expectStatus()
+				.isNotFound();
+	}
 }

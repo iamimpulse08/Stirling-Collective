@@ -1,13 +1,18 @@
 package co.uk.stirling_index.inventory.service;
 
+import co.uk.stirling_index.inventory.exceptions.BusinessNotFoundException;
+import co.uk.stirling_index.inventory.exceptions.InvalidProductUpdateException;
+import co.uk.stirling_index.inventory.exceptions.ProductNotFoundException;
+import co.uk.stirling_index.inventory.model.Business;
 import co.uk.stirling_index.inventory.model.DTO.ProductCreationRequest;
+import co.uk.stirling_index.inventory.model.DTO.ProductDetailUpdate;
 import co.uk.stirling_index.inventory.model.Product;
 import co.uk.stirling_index.inventory.service.assemblers.ProductAssembler;
 import co.uk.stirling_index.inventory.service.repository.ProductsRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 public class ProductService {
@@ -20,21 +25,13 @@ public class ProductService {
         this.businessService = businessService;
     }
 
-    public boolean isProductIdValid(Product product) {
-        if (product == null || product.getId() < 0) {
-            return false;
-        }
-
-        return !productsRepository.existsById(product.getId());
-    }
-
     public Product addProduct(ProductCreationRequest request, Integer businessId) {
         // if the product is null or id is invalid, return
-        if (request == null || businessId == null || businessId < 0) {
-            throw new IllegalArgumentException("Product is null, or ID is invalid" + request);
+        if (businessId == null || businessId < 0) {
+            throw new BusinessNotFoundException(businessId);
         }
-        else if (!request.hasAllRequiredFields()) {
-            throw new IllegalArgumentException("Product is missing required fields" + request);
+        else if (request == null || !request.hasAllRequiredFields()) {
+            throw new InvalidProductUpdateException("Product is missing required fields" + request);
         }
         else if (request.getPrice() < 0) {
             throw new IllegalArgumentException("Product price is invalid" + request);
@@ -43,9 +40,11 @@ public class ProductService {
             throw new IllegalArgumentException("Product quantity is invalid" + request);
         }
 
+        Business business = businessService.getBusinessById(businessId);
+
         Product product = new Product();
         product.setName(request.getName());
-        product.setBusiness_id(businessId);
+        product.setBusiness(business);
         product.setCategory(request.getCategory());
         product.setQuantity(request.getQuantity());
         product.setPrice(request.getPrice());
@@ -53,34 +52,58 @@ public class ProductService {
         return productsRepository.save(product);
     }
 
-    public Product updateProduct(Product product, Long businessId) {
-        if (isProductIdValid(product)) {
-            throw new IllegalArgumentException("Product is null, or ID is invalid" + product);
-        }
+    public boolean isValidPrice(Long price) {
+        return price >= 0;
+    }
 
+    public Product updateProduct(ProductDetailUpdate productUpdateRequest, Integer businessId) {
         // TODO Attribute parsing, what's being updated, what's allowed, etc.
 
-        return productsRepository.save(product);
-    }
-
-    public void deleteProduct(Product product) {
-        if (isProductIdValid(product)) {
-            throw new IllegalArgumentException("Product is null, or ID is invalid" + product);
-        }
-        productsRepository.delete(product);
-    }
-
-    public void deleteProductById(Integer id, Long businessId) {
-
-        if (id == null || id < 0) {
-            throw new IllegalArgumentException("ID is invalid" + id);
+        if (productUpdateRequest == null || businessId == null || businessId < 0) {
+            throw new BusinessNotFoundException(businessId);
         }
 
-        productsRepository.deleteById(id);
+        if (productUpdateRequest.getId() == null || productUpdateRequest.getId() < 0) {
+            throw new ProductNotFoundException(productUpdateRequest.getId());
+        }
+
+        if (!isValidPrice(productUpdateRequest.getPrice())) {
+            String message = String.format("Product price is invalid: %d", productUpdateRequest.getPrice());
+            throw new IllegalArgumentException(message);
+        }
+
+        Product toUpdate = productsRepository.findByProductIdAndBusinessId(productUpdateRequest.getId(), businessId)
+                .orElseThrow(
+                () -> new ProductNotFoundException(productUpdateRequest.getId())
+        );
+
+        toUpdate.setName(productUpdateRequest.getName());
+        toUpdate.setCategory(productUpdateRequest.getCategory());
+        toUpdate.setQuantity(productUpdateRequest.getQuantity());
+        toUpdate.setPrice(productUpdateRequest.getPrice());
+
+        return productsRepository.save(toUpdate);
+    }
+
+    /**
+     * Deletion operation for a product.
+     * @param productId - the product to delete
+     * @param businessId - the business that owns the product
+     */
+    public void deleteProduct(Integer productId, Integer businessId) {
+
+        Product fromRepo = productsRepository.findByProductIdAndBusinessId(productId, businessId)
+                .orElseThrow(
+                        () -> new ProductNotFoundException(productId)
+                );
+
+        productsRepository.delete(fromRepo);
     }
 
     public Product getProductById(Integer id) {
-        return productsRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Product with ID " + id + " not found"));
+        Optional<Product> product = productsRepository.findById(id);
+
+        return product.orElseThrow(() -> new ProductNotFoundException(id));
     }
 
     public List<Product> getAllProducts() {

@@ -6,8 +6,16 @@ import co.uk.stirling_index.inventory.model.Product;
 import org.jspecify.annotations.NonNull;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.mediatype.hal.HalModelBuilder;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
+import org.springframework.hateoas.server.core.EmbeddedWrapper;
+import org.springframework.hateoas.server.core.EmbeddedWrappers;
 import org.springframework.stereotype.Component;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -15,6 +23,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @Component
 public class ProductAssembler implements RepresentationModelAssembler<Product, EntityModel<Product>> {
 
+    private static final EmbeddedWrappers WRAPPERS = new EmbeddedWrappers(false);
 
     @Override
     public EntityModel<Product> toModel(Product product) {
@@ -36,6 +45,9 @@ public class ProductAssembler implements RepresentationModelAssembler<Product, E
     @Override
     @NonNull
     public CollectionModel<EntityModel<Product>> toCollectionModel(@NonNull Iterable<? extends Product> entities) {
-        return RepresentationModelAssembler.super.toCollectionModel(entities);
+        List<EntityModel<Product>> productModels = StreamSupport.stream(entities.spliterator(), false)
+                .map(this::toModel)
+                .toList();
+        return CollectionModel.of(productModels, linkTo(methodOn(ProductController.class).getAllProducts()).withSelfRel());
     }
 }

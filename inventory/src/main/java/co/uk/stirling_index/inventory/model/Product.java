@@ -15,8 +15,12 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Getter
     private Integer id;
-    private Integer business_id;
+
+    @ManyToOne
+    @JoinColumn(name = "business_id")
+    private Business business;
 
     private String name;
     private String category;
@@ -28,7 +32,7 @@ public class Product {
 
     public Product(Product product) {
         this.id = product.id;
-        this.business_id = product.business_id;
+        this.business = product.business;
         this.name = product.name;
         this.category = product.category;
         this.quantity = product.quantity;
@@ -36,9 +40,9 @@ public class Product {
         this.image_uri = product.image_uri;
     }
 
-    public Product(String name, Integer business_id, String category, Integer quantity, Long price, String image_uri) {
+    public Product(String name, Business business, String category, Integer quantity, Long price, String image_uri) {
         this.name = name;
-        this.business_id = business_id;
+        this.business = business;
         this.category = category;
         this.quantity = quantity;
         this.price = price;

@@ -1,5 +1,6 @@
 package co.uk.stirling_index.inventory.service;
 
+import co.uk.stirling_index.inventory.exceptions.BusinessNotFoundException;
 import co.uk.stirling_index.inventory.model.Business;
 import co.uk.stirling_index.inventory.service.repository.BusinessRepository;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,12 @@ public class BusinessService {
 
     public BusinessService(BusinessRepository businessRepository) {
         this.businessRepository = businessRepository;
+    }
+
+    public Business getBusinessById(Integer id) {
+        return businessRepository.findById(id).orElseThrow(
+                () -> new BusinessNotFoundException(id)
+        );
     }
 
     public void addBusiness(Business business) {

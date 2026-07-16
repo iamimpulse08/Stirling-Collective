@@ -1,6 +1,7 @@
 package co.uk.stirling_index.inventory.controller;
 
 import co.uk.stirling_index.inventory.model.DTO.ProductCreationRequest;
+import co.uk.stirling_index.inventory.model.DTO.ProductDetailUpdate;
 import co.uk.stirling_index.inventory.model.Product;
 import co.uk.stirling_index.inventory.service.assemblers.ProductAssembler;
 import co.uk.stirling_index.inventory.service.ProductService;
@@ -16,7 +17,7 @@ import java.util.*;
 
 @CrossOrigin
 @RestController
-@RequestMapping("api/products/")
+@RequestMapping({"api/products", "api/products/"})
 public class ProductController {
 
     private final Logger logger = LoggerFactory.getLogger(ProductController.class);
@@ -27,7 +28,6 @@ public class ProductController {
         this.productService = productService;
         this.productAssembler = productAssembler;
     }
-
 
     @GetMapping
     public ResponseEntity<CollectionModel<EntityModel<Product>>> getAllProducts() {
@@ -55,10 +55,16 @@ public class ProductController {
      * Authorised actions
      */
 
+    /**
+     * Add a product to a business.
+     * @param businessId - the business to add the product to
+     * @param request - a request containing the product details in JSON format as RequestBody
+     * @return The newly created product alongwith HATEOAS links.
+     */
     // TODO Require correct business credentials + OAuth ?
     @PostMapping("business/{businessId}")
     public ResponseEntity<EntityModel<Product>> addProduct(
-            @PathVariable int businessId,
+            @PathVariable Integer businessId,
             @RequestBody ProductCreationRequest request) {
         Product saved = productService.addProduct(request, businessId);
         logger.info("Business with ID: {}  ADDED Product with ID: {} ", businessId, saved.getId());
@@ -66,17 +72,17 @@ public class ProductController {
     }
 
     @PutMapping("business/{businessId}/{productID}")
-    public ResponseEntity<EntityModel<Product>> updateProduct(@PathVariable Long businessId, @RequestBody Product product) {
+    public ResponseEntity<EntityModel<Product>> updateProduct(@PathVariable Integer businessId, @RequestBody ProductDetailUpdate product) {
         Product saved = productService.updateProduct(product, businessId);
-        logger.info("Business with ID: {}  UPDATED Product with ID: {} ", businessId, product.getId());
+        logger.info("Business with ID: {}  UPDATED Product with ID: {} ", businessId, saved.getId());
         return new ResponseEntity<>(productAssembler.toModel(saved), HttpStatus.OK);
     }
 
 
     @DeleteMapping("business/{businessId}/{productID}")
-    public ResponseEntity<?> deleteProduct(@PathVariable Long businessId, @PathVariable String productID) {
+    public ResponseEntity<?> deleteProduct(@PathVariable Integer businessId, @PathVariable Integer productID) {
         // TODO Perhaps this function could return either 204, no content, or link back to the products page for the business?
-        productService.deleteProductById(Integer.parseInt(productID), businessId);
+        productService.deleteProduct(productID, businessId);
         logger.info("Business with ID: {}  DELETED Product with ID: {} ", businessId, productID);
         return new ResponseEntity<>(HttpStatus.OK);
     }

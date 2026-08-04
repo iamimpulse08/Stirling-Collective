@@ -1,5 +1,5 @@
 create table IF NOT EXISTS businesses (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id UUID PRIMARY KEY,
     name varchar(255),
     email varchar(255),
     address varchar(255),
@@ -10,8 +10,8 @@ create table IF NOT EXISTS businesses (
 );
 
 create table IF NOT EXISTS products (
-    id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    business_id int,
+    id UUID PRIMARY KEY,
+    business_id UUID,
     name varchar(255),
     category varchar(255),
     quantity int,

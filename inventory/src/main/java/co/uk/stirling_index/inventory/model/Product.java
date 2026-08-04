@@ -6,6 +6,7 @@ import lombok.Setter;
 
 
 import java.util.Objects;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -14,9 +15,9 @@ import java.util.Objects;
 public class Product {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Getter
-    private Integer id;
+    private UUID id;
 
     @ManyToOne
     @JoinColumn(name = "business_id")

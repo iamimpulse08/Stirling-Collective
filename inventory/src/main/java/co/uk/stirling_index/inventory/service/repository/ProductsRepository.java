@@ -7,9 +7,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface ProductsRepository extends JpaRepository<Product, Integer> {
+public interface ProductsRepository extends JpaRepository<Product, UUID> {
 
     Optional<Product> findProductById(Integer id);
 
@@ -17,7 +18,7 @@ public interface ProductsRepository extends JpaRepository<Product, Integer> {
     List<Product> findAllByBusiness_id(Integer businessId);
 
     @Query("SELECT p FROM Product p WHERE p.id = ?1 AND p.business.id = ?2")
-    Optional<Product> findByProductIdAndBusinessId(Integer productId, Integer businessId);
+    Optional<Product> findByProductIdAndBusinessId(UUID productId, UUID businessId);
 
     @Query("DELETE FROM Product p WHERE p.id = ?1 AND p.business.id = ?2")
     Long deleteByProductIdAndBusinessId(Integer productId, Integer businessId);

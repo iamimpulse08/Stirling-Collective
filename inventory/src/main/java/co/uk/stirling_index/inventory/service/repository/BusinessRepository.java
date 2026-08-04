@@ -8,7 +8,7 @@ import org.springframework.data.repository.CrudRepository;
 import java.util.UUID;
 
 @Repository
-public interface BusinessRepository extends JpaRepository<Business, Integer> {
+public interface BusinessRepository extends JpaRepository<Business, UUID> {
 
     Business findBusinessByEmail(String email);
 }

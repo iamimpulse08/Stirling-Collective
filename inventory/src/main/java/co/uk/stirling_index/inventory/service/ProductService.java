@@ -1,11 +1,11 @@
 package co.uk.stirling_index.inventory.service;
 
-import co.uk.stirling_index.inventory.exceptions.BusinessNotFoundException;
-import co.uk.stirling_index.inventory.exceptions.InvalidProductUpdateException;
-import co.uk.stirling_index.inventory.exceptions.ProductNotFoundException;
+import co.uk.stirling_index.inventory.exceptions.business.BusinessNotFoundException;
+import co.uk.stirling_index.inventory.exceptions.product.InvalidProductUpdateException;
+import co.uk.stirling_index.inventory.exceptions.product.ProductNotFoundException;
 import co.uk.stirling_index.inventory.model.Business;
-import co.uk.stirling_index.inventory.model.DTO.ProductCreationRequest;
-import co.uk.stirling_index.inventory.model.DTO.ProductDetailUpdate;
+import co.uk.stirling_index.inventory.model.DTO.product.ProductCreationRequest;
+import co.uk.stirling_index.inventory.model.DTO.product.ProductDetailUpdate;
 import co.uk.stirling_index.inventory.model.Product;
 import co.uk.stirling_index.inventory.service.assemblers.ProductAssembler;
 import co.uk.stirling_index.inventory.service.repository.ProductsRepository;
@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class ProductService {
@@ -25,9 +26,9 @@ public class ProductService {
         this.businessService = businessService;
     }
 
-    public Product addProduct(ProductCreationRequest request, Integer businessId) {
+    public Product addProduct(ProductCreationRequest request, UUID businessId) {
         // if the product is null or id is invalid, return
-        if (businessId == null || businessId < 0) {
+        if (businessId == null) {
             throw new BusinessNotFoundException(businessId);
         }
         else if (request == null || !request.hasAllRequiredFields()) {
@@ -56,14 +57,14 @@ public class ProductService {
         return price >= 0;
     }
 
-    public Product updateProduct(ProductDetailUpdate productUpdateRequest, Integer businessId) {
+    public Product updateProduct(ProductDetailUpdate productUpdateRequest, UUID businessId) {
         // TODO Attribute parsing, what's being updated, what's allowed, etc.
 
-        if (productUpdateRequest == null || businessId == null || businessId < 0) {
+        if (productUpdateRequest == null || businessId == null) {
             throw new BusinessNotFoundException(businessId);
         }
 
-        if (productUpdateRequest.getId() == null || productUpdateRequest.getId() < 0) {
+        if (productUpdateRequest.getId() == null) {
             throw new ProductNotFoundException(productUpdateRequest.getId());
         }
 
@@ -90,7 +91,7 @@ public class ProductService {
      * @param productId - the product to delete
      * @param businessId - the business that owns the product
      */
-    public void deleteProduct(Integer productId, Integer businessId) {
+    public void deleteProduct(UUID productId, UUID businessId) {
 
         Product fromRepo = productsRepository.findByProductIdAndBusinessId(productId, businessId)
                 .orElseThrow(
@@ -100,7 +101,7 @@ public class ProductService {
         productsRepository.delete(fromRepo);
     }
 
-    public Product getProductById(Integer id) {
+    public Product getProductById(UUID id) {
         Optional<Product> product = productsRepository.findById(id);
 
         return product.orElseThrow(() -> new ProductNotFoundException(id));

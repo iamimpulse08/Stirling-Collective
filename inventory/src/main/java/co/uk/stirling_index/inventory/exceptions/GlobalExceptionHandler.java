@@ -1,11 +1,13 @@
 package co.uk.stirling_index.inventory.exceptions;
 
-import co.uk.stirling_index.inventory.model.Business;
+import co.uk.stirling_index.inventory.exceptions.business.BusinessNotFoundException;
+import co.uk.stirling_index.inventory.exceptions.product.InvalidProductUpdateException;
+import co.uk.stirling_index.inventory.exceptions.product.ProductNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -43,5 +45,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(e.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<String> handleMistype(MethodArgumentTypeMismatchException exception) {
+        String message = String.format("Invalid value '%s' for parameter '%s'", exception.getValue(), exception.getName());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
     }
 }

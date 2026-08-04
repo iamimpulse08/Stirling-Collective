@@ -1,7 +1,7 @@
 package co.uk.stirling_index.inventory.controller;
 
-import co.uk.stirling_index.inventory.model.DTO.ProductCreationRequest;
-import co.uk.stirling_index.inventory.model.DTO.ProductDetailUpdate;
+import co.uk.stirling_index.inventory.model.DTO.product.ProductCreationRequest;
+import co.uk.stirling_index.inventory.model.DTO.product.ProductDetailUpdate;
 import co.uk.stirling_index.inventory.model.Product;
 import co.uk.stirling_index.inventory.service.assemblers.ProductAssembler;
 import co.uk.stirling_index.inventory.service.ProductService;
@@ -38,7 +38,7 @@ public class ProductController {
     }
 
     @GetMapping("{productID}")
-    public ResponseEntity<EntityModel<Product>> getProduct(@PathVariable Integer productID) {
+    public ResponseEntity<EntityModel<Product>> getProduct(@PathVariable UUID productID) {
         Product product = productService.getProductById(productID);
 
         return new ResponseEntity<>(productAssembler.toModel(product), HttpStatus.OK);
@@ -64,7 +64,7 @@ public class ProductController {
     // TODO Require correct business credentials + OAuth ?
     @PostMapping("business/{businessId}")
     public ResponseEntity<EntityModel<Product>> addProduct(
-            @PathVariable Integer businessId,
+            @PathVariable UUID businessId,
             @RequestBody ProductCreationRequest request) {
         Product saved = productService.addProduct(request, businessId);
         logger.info("Business with ID: {}  ADDED Product with ID: {} ", businessId, saved.getId());
@@ -72,7 +72,7 @@ public class ProductController {
     }
 
     @PutMapping("business/{businessId}/{productID}")
-    public ResponseEntity<EntityModel<Product>> updateProduct(@PathVariable Integer businessId, @RequestBody ProductDetailUpdate product) {
+    public ResponseEntity<EntityModel<Product>> updateProduct(@PathVariable UUID businessId, @RequestBody ProductDetailUpdate product) {
         Product saved = productService.updateProduct(product, businessId);
         logger.info("Business with ID: {}  UPDATED Product with ID: {} ", businessId, saved.getId());
         return new ResponseEntity<>(productAssembler.toModel(saved), HttpStatus.OK);
@@ -80,7 +80,7 @@ public class ProductController {
 
 
     @DeleteMapping("business/{businessId}/{productID}")
-    public ResponseEntity<?> deleteProduct(@PathVariable Integer businessId, @PathVariable Integer productID) {
+    public ResponseEntity<?> deleteProduct(@PathVariable UUID businessId, @PathVariable UUID productID) {
         // TODO Perhaps this function could return either 204, no content, or link back to the products page for the business?
         productService.deleteProduct(productID, businessId);
         logger.info("Business with ID: {}  DELETED Product with ID: {} ", businessId, productID);

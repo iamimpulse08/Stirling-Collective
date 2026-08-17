@@ -1,4 +1,4 @@
-package co.uk.stirling_index.inventory.model.DTO.product;
+package co.uk.stirling_index.inventory.model.product.dto;
 
 
 import jakarta.validation.constraints.NotBlank;

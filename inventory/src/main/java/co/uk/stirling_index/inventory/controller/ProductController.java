@@ -1,8 +1,9 @@
 package co.uk.stirling_index.inventory.controller;
 
-import co.uk.stirling_index.inventory.model.DTO.product.ProductCreationRequest;
-import co.uk.stirling_index.inventory.model.DTO.product.ProductDetailUpdate;
-import co.uk.stirling_index.inventory.model.Product;
+import co.uk.stirling_index.inventory.model.product.dto.ProductCreationRequest;
+import co.uk.stirling_index.inventory.model.product.dto.ProductDetailUpdate;
+import co.uk.stirling_index.inventory.model.product.Product;
+import co.uk.stirling_index.inventory.model.security.userdetails.AuthenticatedUser;
 import co.uk.stirling_index.inventory.service.assemblers.ProductAssembler;
 import co.uk.stirling_index.inventory.service.ProductService;
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -45,7 +47,7 @@ public class ProductController {
     }
 
     @GetMapping("business/{businessId}")
-    ResponseEntity<CollectionModel<EntityModel<Product>>> getAllProductsFromBusiness(@PathVariable Integer businessId) {
+    ResponseEntity<CollectionModel<EntityModel<Product>>> getAllProductsFromBusiness(@PathVariable UUID businessId) {
         List<Product> products = productService.getAllProducts(businessId);
 
         return new ResponseEntity<>(productAssembler.toCollectionModel(products), HttpStatus.OK);
@@ -57,33 +59,53 @@ public class ProductController {
 
     /**
      * Add a product to a business.
-     * @param businessId - the business to add the product to
      * @param request - a request containing the product details in JSON format as RequestBody
-     * @return The newly created product alongwith HATEOAS links.
+     * @return The newly created product along with HATEOAS links.
      */
     // TODO Require correct business credentials + OAuth ?
-    @PostMapping("business/{businessId}")
-    public ResponseEntity<EntityModel<Product>> addProduct(
-            @PathVariable UUID businessId,
-            @RequestBody ProductCreationRequest request) {
-        Product saved = productService.addProduct(request, businessId);
-        logger.info("Business with ID: {}  ADDED Product with ID: {} ", businessId, saved.getId());
+    @PostMapping("/business/{businessID}")
+    public ResponseEntity<EntityModel<Product>> addProduct
+    (
+            @RequestBody ProductCreationRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable UUID businessID
+    )
+    {
+        Product saved = productService.addProduct(request, user, businessID);
+        logger.info("Business with ID: {}  ADDED Product with ID: {} ",
+                saved.getBusiness().getId(),
+                saved.getId()
+        );
         return new ResponseEntity<>(productAssembler.toModel(saved), HttpStatus.CREATED);
     }
 
-    @PutMapping("business/{businessId}/{productID}")
-    public ResponseEntity<EntityModel<Product>> updateProduct(@PathVariable UUID businessId, @RequestBody ProductDetailUpdate product) {
-        Product saved = productService.updateProduct(product, businessId);
-        logger.info("Business with ID: {}  UPDATED Product with ID: {} ", businessId, saved.getId());
+    @PutMapping("/{productID}")
+    public ResponseEntity<EntityModel<Product>> updateProduct
+            (
+            @RequestBody ProductDetailUpdate request,
+            @PathVariable UUID productID,
+            @AuthenticationPrincipal AuthenticatedUser user
+            )
+    {
+        Product saved = productService.updateProduct(request, user, productID);
+        logger.info("Business with ID: {}  UPDATED Product with ID: {} ",
+                saved.getBusiness().getId(),
+                saved.getId()
+        );
         return new ResponseEntity<>(productAssembler.toModel(saved), HttpStatus.OK);
     }
 
 
-    @DeleteMapping("business/{businessId}/{productID}")
-    public ResponseEntity<?> deleteProduct(@PathVariable UUID businessId, @PathVariable UUID productID) {
+    @DeleteMapping("/{productID}")
+    public ResponseEntity<?> deleteProduct
+            (
+            @PathVariable UUID productID,
+            @AuthenticationPrincipal AuthenticatedUser user
+            )
+    {
         // TODO Perhaps this function could return either 204, no content, or link back to the products page for the business?
-        productService.deleteProduct(productID, businessId);
-        logger.info("Business with ID: {}  DELETED Product with ID: {} ", businessId, productID);
+        productService.deleteProduct(productID, user);
+        logger.info("Business with ID: {}  DELETED Product with ID: {} ", user.businessID(), productID);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }

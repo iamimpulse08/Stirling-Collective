@@ -1,5 +1,6 @@
-package co.uk.stirling_index.inventory.model;
+package co.uk.stirling_index.inventory.model.product;
 
+import co.uk.stirling_index.inventory.model.business.Business;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,8 +20,8 @@ public class Product {
     @Getter
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "business_id")
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "business_id", nullable = false)
     private Business business;
 
     private String name;
@@ -52,8 +53,16 @@ public class Product {
 
     @Override
     public String toString() {
-        return "Product [id=" + id + ", description=" + ", category=" + category + ", stock_count="
-                + quantity + ", price=" + price + "]";
+        return String.format(
+                "id = %s, name = %s, category = %s, quantity = %s, price = %s",
+                id,
+                name,
+                category,
+                quantity,
+                price
+
+
+        );
     }
 
     // equals

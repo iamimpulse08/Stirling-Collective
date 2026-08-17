@@ -1,7 +1,7 @@
 package co.uk.stirling_index.inventory.service;
 
 import co.uk.stirling_index.inventory.exceptions.business.BusinessNotFoundException;
-import co.uk.stirling_index.inventory.model.Business;
+import co.uk.stirling_index.inventory.model.business.Business;
 import co.uk.stirling_index.inventory.service.repository.BusinessRepository;
 import org.springframework.stereotype.Service;
 

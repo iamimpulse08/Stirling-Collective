@@ -1,12 +1,10 @@
 package co.uk.stirling_index.inventory.controller;
 
-import co.uk.stirling_index.inventory.model.Product;
 import co.uk.stirling_index.inventory.service.BusinessService;
 import co.uk.stirling_index.inventory.service.ProductService;
 import co.uk.stirling_index.inventory.service.assemblers.ProductAssembler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.hateoas.EntityModel;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

@@ -1,18 +1,22 @@
 package co.uk.stirling_index.inventory;
 
-import co.uk.stirling_index.inventory.model.Business;
-import co.uk.stirling_index.inventory.model.DTO.product.ProductCreationRequest;
-import co.uk.stirling_index.inventory.model.DTO.product.ProductDetailUpdate;
-import co.uk.stirling_index.inventory.model.Product;
+import co.uk.stirling_index.inventory.model.security.AccessCase;
+import co.uk.stirling_index.inventory.model.business.Business;
+import co.uk.stirling_index.inventory.model.product.dto.ProductCreationRequest;
+import co.uk.stirling_index.inventory.model.product.dto.ProductDetailUpdate;
+import co.uk.stirling_index.inventory.model.product.Product;
+import co.uk.stirling_index.inventory.model.security.Role;
 import co.uk.stirling_index.inventory.service.repository.BusinessRepository;
 import co.uk.stirling_index.inventory.service.repository.ProductsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.client.RestTestClient;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.springframework.http.HttpStatus;
 
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,6 +45,7 @@ class InventoryProductControllerTest extends IntegrationTest {
 		assertTrue(postgreSQLContainer.isRunning());
 	}
 
+
 	/**
 	 * Setup method to initialise the database before each test.
 	 *
@@ -55,13 +60,15 @@ class InventoryProductControllerTest extends IntegrationTest {
 	void setup() {
 		productsRepository.deleteAll();
 		businessRepository.deleteAll();
-
-		restTestClient = RestTestClient.bindToServer()
-				.baseUrl("http://localhost:" + port)
-				.build();
-
 		initialiseDB();
+
+		restTestClient = restTestClientAsBusiness(business1.getId());
 	}
+
+	Business business1;
+	Business business2;
+	Product product1;
+	Product product2;
 
 	void initialiseDB() {
 		// TODO Could probably create a generic generation strategy using fixed size final variables,
@@ -70,21 +77,23 @@ class InventoryProductControllerTest extends IntegrationTest {
 		Business business2 = new Business("Business B", "456 Street", "FK8 2EE", "456@gmail.com", "07924823491");
 
 		// save to theoretical postgres database
-		business1 = businessRepository.save(business1);
-		business2 = businessRepository.save(business2);
+		this.business1 = businessRepository.save(business1);
+		this.business2 = businessRepository.save(business2);
 
 		Product product1 = new Product("milk", business1, "food", 10, 299L, "abc");
 		Product product2 = new Product("bread", business2, "food", 15, 399L, "abc");
+
+		this.product1 = productsRepository.save(product1);
+		this.product2 = productsRepository.save(product2);
+
 
         productsRepository.save(product1);
         productsRepository.save(product2);
     }
 
-
 	/**
 	 * A test for adding products, where all mandatory fields are present.
 	 */
-	@Test
 	void addProductWithAllMandatoryDetails() {
 		ProductCreationRequest productCreationRequest = new ProductCreationRequest();
 		productCreationRequest.setName("milk");
@@ -157,7 +166,7 @@ class InventoryProductControllerTest extends IntegrationTest {
 	@Test
 	void retrieveProductFromBusiness() {
 
-		String URI = String.format("/api/products/business/%s", businessRepository.findAll().getFirst().getId());
+		String URI = String.format("/api/products/business/%s", businessRepository.findAll().getFirst().getId().toString());
 
 		var responseBody = restTestClient.get()
 				.uri(URI)
@@ -239,16 +248,14 @@ class InventoryProductControllerTest extends IntegrationTest {
 	@Test
 	 void updateProduct() {
 		Product product = productsRepository.findAll().getFirst();
-		UUID businessId = product.getBusiness().getId();
 
 		ProductDetailUpdate detailUpdate = new ProductDetailUpdate();
 		detailUpdate.setName("milk");
 		detailUpdate.setCategory("food");
 		detailUpdate.setQuantity(25);
 		detailUpdate.setPrice(1400L);
-		detailUpdate.setId(product.getId());
 
-		String URI = String.format("/api/products/business/%s/%s", businessId, product.getId());
+		String URI = String.format("/api/products/%s", product.getId());
 
 		restTestClient.put()
 				.uri(URI)
@@ -269,8 +276,7 @@ class InventoryProductControllerTest extends IntegrationTest {
 		detailUpdate.setQuantity(25);
 		detailUpdate.setPrice(1400L);
 
-		UUID businessId = businessRepository.findAll().getFirst().getId();
-		String URI = String.format("/api/products/business/%s/%s", businessId, NON_EXISTENT_PRODUCT_ID);
+		String URI = String.format("/api/products/%s", NON_EXISTENT_PRODUCT_ID);
 
 		restTestClient.put()
 				.uri(URI)
@@ -294,7 +300,7 @@ class InventoryProductControllerTest extends IntegrationTest {
 		detailUpdate.setQuantity(25);
 		detailUpdate.setPrice(1400L);
 
-		String URI = String.format("/api/products/business/%s/%s", NON_EXISTENT_BUSINESS_ID, productId);
+		String URI = String.format("/api/products/%s", productId);
 
 		restTestClient.put()
 				.uri(URI)
@@ -310,7 +316,6 @@ class InventoryProductControllerTest extends IntegrationTest {
 	@Test
 	void updateProductWithInvalidPrice() {
 		Product product = productsRepository.findAll().getFirst();
-		UUID businessId = businessRepository.findAll().getFirst().getId();
 		UUID productId = product.getId();
 
 		ProductDetailUpdate detailUpdate = new ProductDetailUpdate();
@@ -318,9 +323,8 @@ class InventoryProductControllerTest extends IntegrationTest {
 		detailUpdate.setQuantity(product.getQuantity());
 		detailUpdate.setCategory(product.getCategory());
 		detailUpdate.setName(product.getName());
-		detailUpdate.setId(productId);
 
-		String URI = String.format("/api/products/business/%s/%s", businessId, productId);
+		String URI = String.format("/api/products/%s", productId);
 
 		restTestClient.put()
 				.uri(URI)
@@ -340,10 +344,9 @@ class InventoryProductControllerTest extends IntegrationTest {
 	void deleteProduct() {
 
 		Product product = productsRepository.findAll().getFirst();
-		UUID businessId = product.getBusiness().getId();
 		UUID productId = product.getId();
 
-		String URI = String.format("/api/products/business/%s/%s", businessId, productId);
+		String URI = String.format("/api/products/%s", productId);
 
 		restTestClient.delete()
 				.uri(URI)
@@ -352,11 +355,11 @@ class InventoryProductControllerTest extends IntegrationTest {
 				.isOk();
 	}
 
+
+
 	@Test
 	void deleteProductWithInvalidProductId() {
-		UUID businessId = businessRepository.findAll().getFirst().getId();
-
-		String URI = String.format("/api/products/business/%s/%s", businessId, NON_EXISTENT_PRODUCT_ID);
+		String URI = String.format("/api/products/%s", NON_EXISTENT_PRODUCT_ID);
 
 		restTestClient.delete()
 				.uri(URI)

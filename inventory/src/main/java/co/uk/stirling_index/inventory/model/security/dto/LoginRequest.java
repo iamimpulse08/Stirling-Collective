@@ -1,4 +1,4 @@
-package co.uk.stirling_index.inventory.model.DTO.security;
+package co.uk.stirling_index.inventory.model.security.dto;
 
 public class LoginRequest extends AbstractUserDetailDTO{
 }

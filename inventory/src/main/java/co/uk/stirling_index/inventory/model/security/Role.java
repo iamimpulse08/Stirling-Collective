@@ -1,4 +1,4 @@
-package co.uk.stirling_index.inventory.model;
+package co.uk.stirling_index.inventory.model.security;
 
 public enum Role {
     VIEWER("Viewer"),

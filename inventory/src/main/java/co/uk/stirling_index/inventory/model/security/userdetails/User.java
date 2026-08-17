@@ -1,5 +1,7 @@
-package co.uk.stirling_index.inventory.model;
+package co.uk.stirling_index.inventory.model.security.userdetails;
 
+import co.uk.stirling_index.inventory.model.business.Business;
+import co.uk.stirling_index.inventory.model.security.Role;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,7 +16,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID uuid;
+    private UUID id;
 
     @Column(unique = true, nullable = false)
     private String email;

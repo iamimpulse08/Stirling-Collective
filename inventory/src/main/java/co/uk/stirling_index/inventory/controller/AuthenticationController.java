@@ -1,24 +1,29 @@
 package co.uk.stirling_index.inventory.controller;
 
-import co.uk.stirling_index.inventory.model.DTO.security.AuthResponse;
-import co.uk.stirling_index.inventory.model.DTO.security.LoginRequest;
-import co.uk.stirling_index.inventory.model.DTO.security.RegisterRequest;
-import co.uk.stirling_index.inventory.model.Role;
-import co.uk.stirling_index.inventory.model.User;
+import co.uk.stirling_index.inventory.model.security.userdetails.AuthenticatedUser;
+import co.uk.stirling_index.inventory.model.security.dto.AuthResponse;
+import co.uk.stirling_index.inventory.model.security.dto.LoginRequest;
+import co.uk.stirling_index.inventory.model.security.dto.PromoteToBusinessAccountRequest;
+import co.uk.stirling_index.inventory.model.security.dto.RegisterRequest;
+import co.uk.stirling_index.inventory.model.security.Role;
+import co.uk.stirling_index.inventory.model.security.userdetails.CustomUserPrinciple;
+import co.uk.stirling_index.inventory.model.security.userdetails.User;
+import co.uk.stirling_index.inventory.service.UserService;
 import co.uk.stirling_index.inventory.service.security.JwtService;
 import co.uk.stirling_index.inventory.service.repository.UserRepository;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,12 +34,14 @@ public class AuthenticationController {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
+    private final UserService userService;
 
-    public AuthenticationController(UserRepository userRepository, JwtService jwtService, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder) {
+    public AuthenticationController(UserRepository userRepository, JwtService jwtService, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, UserService userService) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
+        this.userService = userService;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -52,13 +59,36 @@ public class AuthenticationController {
         User user = createNewUser(request);
 
         logger.info("Created new user with ID: {} with role: {} to the database for business: {} with business ID: {}",
-                user.getUuid(), user.getRole().name(), user.getBusiness().getName(), user.getBusiness().getId()
+                user.getId(),
+                user.getRole().name(),
+                user.getBusiness().getName(),
+                user.getBusiness().getId()
                 );
-        return ResponseEntity.ok(new AuthResponse(jwtService.generateToken(request.getEmail())));
+
+        CustomUserPrinciple principle = new CustomUserPrinciple(user);
+        String token = jwtService.generateToken(principle);
+
+        return ResponseEntity.ok(new AuthResponse(token));
     }
+
+    @PreAuthorize("hasRole('OPERATOR')")
+    @PostMapping("/users/{userId}/escalate")
+    public ResponseEntity<?> promoteToBusinessAccount
+            (
+                    @PathVariable UUID userId,
+                    @RequestBody @Valid PromoteToBusinessAccountRequest request,
+                    @AuthenticationPrincipal AuthenticatedUser user
+            )
+    {
+        userService.promoteToBusinessAccount(userId, request.getBusinessId());
+
+        return ResponseEntity.ok().build();
+    }
+
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
@@ -68,10 +98,13 @@ public class AuthenticationController {
                 ()-> new UsernameNotFoundException("User not found with email:" + email)
         );
 
-        String token = jwtService.generateToken(email);
+        CustomUserPrinciple principle = new CustomUserPrinciple(user);
+        String token = jwtService.generateToken(principle);
 
         logger.info("User logged in with ID: {} using email: {}, with role: {}",
-                user.getUuid(), user.getEmail(), user.getRole().name()
+                user.getId(),
+                user.getEmail(),
+                user.getRole().name()
         );
 
         return ResponseEntity.ok(new AuthResponse(token));

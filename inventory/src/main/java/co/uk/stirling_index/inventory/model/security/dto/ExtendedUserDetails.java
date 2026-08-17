@@ -1,6 +1,6 @@
-package co.uk.stirling_index.inventory.model.DTO.security;
+package co.uk.stirling_index.inventory.model.security.dto;
 
-import co.uk.stirling_index.inventory.model.User;
+import co.uk.stirling_index.inventory.model.security.userdetails.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 

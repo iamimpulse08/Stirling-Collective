@@ -1,12 +1,12 @@
 package co.uk.stirling_index.inventory.service;
 
-import co.uk.stirling_index.inventory.exceptions.business.BusinessNotFoundException;
 import co.uk.stirling_index.inventory.exceptions.product.InvalidProductUpdateException;
 import co.uk.stirling_index.inventory.exceptions.product.ProductNotFoundException;
-import co.uk.stirling_index.inventory.model.Business;
-import co.uk.stirling_index.inventory.model.DTO.product.ProductCreationRequest;
-import co.uk.stirling_index.inventory.model.DTO.product.ProductDetailUpdate;
-import co.uk.stirling_index.inventory.model.Product;
+import co.uk.stirling_index.inventory.model.business.Business;
+import co.uk.stirling_index.inventory.model.product.dto.ProductCreationRequest;
+import co.uk.stirling_index.inventory.model.product.dto.ProductDetailUpdate;
+import co.uk.stirling_index.inventory.model.product.Product;
+import co.uk.stirling_index.inventory.model.security.userdetails.AuthenticatedUser;
 import co.uk.stirling_index.inventory.service.assemblers.ProductAssembler;
 import co.uk.stirling_index.inventory.service.repository.ProductsRepository;
 import org.springframework.stereotype.Service;
@@ -20,18 +20,17 @@ public class ProductService {
 
     private final ProductsRepository productsRepository;
     private final BusinessService businessService;
+    private final OwnershipValidator ownershipValidator;
 
-    public ProductService(ProductsRepository productsRepository, BusinessService businessService, ProductAssembler productAssembler) {
+    public ProductService(ProductsRepository productsRepository, BusinessService businessService, ProductAssembler productAssembler, OwnershipValidator ownershipValidator) {
         this.productsRepository = productsRepository;
         this.businessService = businessService;
+        this.ownershipValidator = ownershipValidator;
     }
 
-    public Product addProduct(ProductCreationRequest request, UUID businessId) {
+    public Product addProduct(ProductCreationRequest request, AuthenticatedUser user, UUID businessID) {
         // if the product is null or id is invalid, return
-        if (businessId == null) {
-            throw new BusinessNotFoundException(businessId);
-        }
-        else if (request == null || !request.hasAllRequiredFields()) {
+        if (request == null || !request.hasAllRequiredFields()) {
             throw new InvalidProductUpdateException("Product is missing required fields" + request);
         }
         else if (request.getPrice() < 0) {
@@ -41,7 +40,10 @@ public class ProductService {
             throw new IllegalArgumentException("Product quantity is invalid" + request);
         }
 
-        Business business = businessService.getBusinessById(businessId);
+        // The business ID is set via the method parameter, not by the user as this could introduce NPE bugs when the user is operator.
+        // TODO An alternative solution to this would be to assign a business to the operator, which is not null.
+        ownershipValidator.assertCanCreateFor(businessID, user);
+        Business business = businessService.getBusinessById(businessID);
 
         Product product = new Product();
         product.setName(request.getName());
@@ -57,15 +59,12 @@ public class ProductService {
         return price >= 0;
     }
 
-    public Product updateProduct(ProductDetailUpdate productUpdateRequest, UUID businessId) {
+    public Product updateProduct(ProductDetailUpdate productUpdateRequest, AuthenticatedUser user, UUID productID) {
         // TODO Attribute parsing, what's being updated, what's allowed, etc.
 
-        if (productUpdateRequest == null || businessId == null) {
-            throw new BusinessNotFoundException(businessId);
-        }
-
-        if (productUpdateRequest.getId() == null) {
-            throw new ProductNotFoundException(productUpdateRequest.getId());
+        // TODO fix passing null into this method - could pass in a product ID, or a product object from the controller/request.
+        if (productID == null) {
+            throw new ProductNotFoundException(null);
         }
 
         if (!isValidPrice(productUpdateRequest.getPrice())) {
@@ -73,10 +72,10 @@ public class ProductService {
             throw new IllegalArgumentException(message);
         }
 
-        Product toUpdate = productsRepository.findByProductIdAndBusinessId(productUpdateRequest.getId(), businessId)
-                .orElseThrow(
-                () -> new ProductNotFoundException(productUpdateRequest.getId())
+        Product toUpdate = productsRepository.findById(productID)
+                .orElseThrow(() -> new ProductNotFoundException(productID)
         );
+        ownershipValidator.assertCanModify(toUpdate, user);
 
         toUpdate.setName(productUpdateRequest.getName());
         toUpdate.setCategory(productUpdateRequest.getCategory());
@@ -88,17 +87,17 @@ public class ProductService {
 
     /**
      * Deletion operation for a product.
+     *
      * @param productId - the product to delete
-     * @param businessId - the business that owns the product
+     * @param user
      */
-    public void deleteProduct(UUID productId, UUID businessId) {
+    public void deleteProduct(UUID productId, AuthenticatedUser user) {
 
-        Product fromRepo = productsRepository.findByProductIdAndBusinessId(productId, businessId)
-                .orElseThrow(
-                        () -> new ProductNotFoundException(productId)
-                );
+        Product product = productsRepository.findById(productId)
+                        .orElseThrow(() -> new ProductNotFoundException(productId));
 
-        productsRepository.delete(fromRepo);
+        ownershipValidator.assertCanModify(product, user);
+        productsRepository.delete(product);
     }
 
     public Product getProductById(UUID id) {
@@ -111,7 +110,7 @@ public class ProductService {
         return productsRepository.findAll();
     }
 
-    public List<Product> getAllProducts(Integer businessId) {
+    public List<Product> getAllProducts(UUID businessId) {
         return productsRepository.findAllByBusiness_id(businessId);
     }
 }

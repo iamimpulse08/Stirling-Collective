@@ -1,6 +1,7 @@
 package co.uk.stirling_index.inventory.service.security;
 
-import co.uk.stirling_index.inventory.model.User;
+import co.uk.stirling_index.inventory.model.security.userdetails.User;
+import co.uk.stirling_index.inventory.model.security.dto.ExtendedUserDetails;
 import co.uk.stirling_index.inventory.service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
@@ -17,15 +18,11 @@ public class ExtendedUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(@NonNull String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email).orElseThrow(
-                () -> new UsernameNotFoundException(email)
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(email)
         );
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getEmail())
-                .password(user.getPassword())
-                .authorities(user.getRole().name())
-                .build();
+        return new ExtendedUserDetails(user);
     }
 
 }

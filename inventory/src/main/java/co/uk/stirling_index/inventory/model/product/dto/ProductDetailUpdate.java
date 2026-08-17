@@ -1,4 +1,4 @@
-package co.uk.stirling_index.inventory.model.DTO.product;
+package co.uk.stirling_index.inventory.model.product.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,10 +13,6 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 public class ProductDetailUpdate {
-
-    @NotNull
-    @PositiveOrZero
-    private UUID id;
 
     @NotBlank
     private String name;

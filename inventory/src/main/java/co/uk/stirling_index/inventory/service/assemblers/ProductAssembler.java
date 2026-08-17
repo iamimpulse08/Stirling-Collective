@@ -2,19 +2,15 @@ package co.uk.stirling_index.inventory.service.assemblers;
 
 
 import co.uk.stirling_index.inventory.controller.ProductController;
-import co.uk.stirling_index.inventory.model.Product;
+import co.uk.stirling_index.inventory.model.product.Product;
 import org.jspecify.annotations.NonNull;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.mediatype.hal.HalModelBuilder;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
-import org.springframework.hateoas.server.core.EmbeddedWrapper;
 import org.springframework.hateoas.server.core.EmbeddedWrappers;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;

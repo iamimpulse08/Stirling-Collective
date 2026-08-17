@@ -1,6 +1,6 @@
 package co.uk.stirling_index.inventory.service.repository;
 
-import co.uk.stirling_index.inventory.model.User;
+import co.uk.stirling_index.inventory.model.security.userdetails.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

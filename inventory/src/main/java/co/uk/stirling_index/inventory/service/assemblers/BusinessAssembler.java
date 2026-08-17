@@ -1,6 +1,6 @@
 package co.uk.stirling_index.inventory.service.assemblers;
 
-import co.uk.stirling_index.inventory.model.Business;
+import co.uk.stirling_index.inventory.model.business.Business;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;

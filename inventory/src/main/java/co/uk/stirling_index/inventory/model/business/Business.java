@@ -1,4 +1,4 @@
-package co.uk.stirling_index.inventory.model;
+package co.uk.stirling_index.inventory.model.business;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

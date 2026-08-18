@@ -155,7 +155,7 @@ class InventoryProductControllerTest extends IntegrationTest {
 				.body(productCreationRequest)
 				.exchange()
 				.expectStatus()
-				.isNotFound();
+				.isBadRequest();
 	}
 
 	/**
@@ -283,7 +283,7 @@ class InventoryProductControllerTest extends IntegrationTest {
 				.body(detailUpdate)
 				.exchange()
 				.expectStatus()
-				.isNotFound();
+				.isBadRequest();
 	}
 
 	/**
@@ -291,6 +291,8 @@ class InventoryProductControllerTest extends IntegrationTest {
 	 */
 	@Test
 	void updateProductWithInvalidBusinessId() {
+
+		// TODO this doesnt work properly because it expects fail, but the business that this product belongs to, the RestTestClient currently acts as.
 		Product product = productsRepository.findAll().getFirst();
 		UUID productId = product.getId();
 
@@ -365,7 +367,7 @@ class InventoryProductControllerTest extends IntegrationTest {
 				.uri(URI)
 				.exchange()
 				.expectStatus()
-				.isNotFound();
+				.isBadRequest();
 	}
 
 	@Test

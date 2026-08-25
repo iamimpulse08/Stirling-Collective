@@ -42,19 +42,18 @@ public class ApplicationConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
-        CorsConfiguration AuthorisedConfig = new CorsConfiguration();
-        AuthorisedConfig.setAllowedOrigins(List.of("https://admin.crowcuriosities.co.uk"));
-        AuthorisedConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
-        AuthorisedConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        AuthorisedConfig.setAllowCredentials(true);
-        source.registerCorsConfiguration("/api/auth/**", AuthorisedConfig);
+        CorsConfiguration writeConfig = new CorsConfiguration();
+        writeConfig.setAllowedOrigins(List.of("https://admin.crowcuriosities.co.uk"));
+        writeConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+        writeConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        writeConfig.setAllowCredentials(false);
+        source.registerCorsConfiguration("/api/products/**", writeConfig);
 
         CorsConfiguration publicConfig = new CorsConfiguration();
         publicConfig.setAllowedOrigins(List.of("*"));
         publicConfig.setAllowedMethods(List.of("GET"));
-        publicConfig.setAllowedHeaders(List.of("Content-Type"));
         publicConfig.setAllowCredentials(false);
-        source.registerCorsConfiguration("/api/products/**", publicConfig);
+        source.registerCorsConfiguration("/api/products/public/**", publicConfig);
 
         return source;
     }

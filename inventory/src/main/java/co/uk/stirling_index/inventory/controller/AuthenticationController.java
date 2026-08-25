@@ -63,6 +63,9 @@ public class AuthenticationController {
             )
     {
         userService.promoteToBusinessAccount(userId, request.getBusinessId());
+        logger.info("User {} promoted to BUSINESS account for business ID: {} ",
+                user.email(), request.getBusinessId()
+        );
 
         return ResponseEntity.ok().build();
     }
@@ -80,17 +83,15 @@ public class AuthenticationController {
         );
 
         CustomUserPrinciple principle = new CustomUserPrinciple(user);
-        String token = jwtService.generateAccessToken(principle);
+        String accessToken = jwtService.generateAccessToken(principle);
         JwtService.RefreshTokenResult refreshToken = jwtService.generateRefreshToken(principle);
 
-        userService.storeRefreshToken(user.getId(), refreshToken);
-        JwtService.RefreshTokenResult refreshTokenResult = jwtService.generateRefreshToken(principle);
 
-        refreshTokenService.store(user.getId(), refreshTokenResult.jti(), refreshTokenResult.expiration());
-
+        refreshTokenService.store(user.getId(), refreshToken.jti(), refreshToken.expiration());
+        setRefreshCookie(response, refreshToken.token(), refreshToken.expiration());
 
         ResponseCookie cookie =
-                ResponseCookie.from("refresh_token", token)
+                ResponseCookie.from("refresh_token", accessToken)
                         .httpOnly(true)
                         .secure(true)
                         .sameSite("None")
@@ -134,13 +135,13 @@ public class AuthenticationController {
         JwtService.RefreshTokenResult newRefreshToken = jwtService.generateRefreshToken(principle);
 
         refreshTokenService.store(userOptional.get().getId(), newRefreshToken.jti(), newRefreshToken.expiration());
-        setRefreshCookie(response, newRefreshToken.accessToken(), newRefreshToken.expiration());
+        setRefreshCookie(response, newRefreshToken.token(), newRefreshToken.expiration());
 
         return ResponseEntity.ok(new AuthResponse(newAccessToken));
     }
 
     @PostMapping("/logout")
-    private ResponseEntity<?> logout(HttpServletResponse response,
+    public ResponseEntity<?> logout(HttpServletResponse response,
                                           @CookieValue(value = "refresh_token", required = false) String refreshToken) {
         if (refreshToken != null) {
             jwtService.parseAndValidate(refreshToken).ifPresent(jwtClaimsSet -> {

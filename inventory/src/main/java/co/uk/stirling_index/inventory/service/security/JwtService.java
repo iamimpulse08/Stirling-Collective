@@ -55,11 +55,11 @@ public class JwtService {
 
     /**
      * Returns the serialised JWT and the jti (JWT ID) of the JWT.
-     * @param accessToken
+     * @param token
      * @param jti
      * @param expiration
      */
-    public record RefreshTokenResult(String accessToken, UUID jti, Instant expiration) {}
+    public record RefreshTokenResult(String token, UUID jti, Instant expiration) {}
 
     public RefreshTokenResult generateRefreshToken(CustomUserPrinciple principle) {
         try {

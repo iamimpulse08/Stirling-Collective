@@ -1,22 +1,17 @@
 package co.uk.stirling_index.inventory;
 
-import co.uk.stirling_index.inventory.model.security.AccessCase;
 import co.uk.stirling_index.inventory.model.business.Business;
 import co.uk.stirling_index.inventory.model.product.dto.ProductCreationRequest;
 import co.uk.stirling_index.inventory.model.product.dto.ProductDetailUpdate;
 import co.uk.stirling_index.inventory.model.product.Product;
-import co.uk.stirling_index.inventory.model.security.Role;
+import co.uk.stirling_index.inventory.service.ProductService;
 import co.uk.stirling_index.inventory.service.repository.BusinessRepository;
 import co.uk.stirling_index.inventory.service.repository.ProductsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,6 +23,8 @@ class InventoryProductControllerTest extends IntegrationTest {
 	BusinessRepository businessRepository;
 	@Autowired
 	ProductsRepository productsRepository;
+	@Autowired
+	ProductService productService;
 
 	/**
 	 * Local Test Variables
@@ -62,7 +59,7 @@ class InventoryProductControllerTest extends IntegrationTest {
 		businessRepository.deleteAll();
 		initialiseDB();
 
-		restTestClient = restTestClientAsBusiness(business1.getId());
+		restTestClient = restTestClientAnonymous();
 	}
 
 	Business business1;
@@ -91,10 +88,17 @@ class InventoryProductControllerTest extends IntegrationTest {
         productsRepository.save(product2);
     }
 
+	private Product getFirstProductOfBusiness(Business business) {
+		return productService.getAllProducts(business.getId()).getFirst();
+	}
+
 	/**
 	 * A test for adding products, where all mandatory fields are present.
 	 */
-	void addProductWithAllMandatoryDetails() {
+	@Test
+	void addProductWithAllMandatoryDetailsExpectOk() {
+		setStateAsBusiness(business1);
+
 		ProductCreationRequest productCreationRequest = new ProductCreationRequest();
 		productCreationRequest.setName("milk");
 		productCreationRequest.setCategory("food");
@@ -120,13 +124,15 @@ class InventoryProductControllerTest extends IntegrationTest {
 	 * A test for adding products, where it is missing at least one mandatory field.
 	 */
 	@Test
-	void addProductWithMissingMandatoryDetails() {
+	void addProductWithMissingMandatoryDetailsExpectBadRequest() {
+		setStateAsBusiness(business1);
+
 		ProductCreationRequest productCreationRequest = new ProductCreationRequest();
 		productCreationRequest.setName("milk");
 		productCreationRequest.setCategory("food");
 		productCreationRequest.setQuantity(10);
 
-		String URI = String.format("/api/products/business/%s", businessRepository.findAll().getFirst().getId());
+		String URI = String.format("/api/products/business/%s", business1);
 
 		// Missing price post-request, expects 400 Bad Request
 		restTestClient.post()
@@ -137,11 +143,33 @@ class InventoryProductControllerTest extends IntegrationTest {
 				.isBadRequest();
 	}
 
+	@Test
+	void addProductOfAnotherBusinessExpectForbidden() {
+		setStateAsBusiness(business1);
+		ProductCreationRequest productCreationRequest = new ProductCreationRequest();
+		productCreationRequest.setName("milk");
+		productCreationRequest.setCategory("food");
+		productCreationRequest.setQuantity(10);
+		productCreationRequest.setPrice(299L);
+
+		String URI = String.format("/api/products/business/%s", business2.getId());
+
+		restTestClient.post()
+				.uri(URI)
+				.body(productCreationRequest)
+				.exchange()
+				.expectStatus()
+				.isForbidden();
+	}
+
+
 	/**
 	 * A test for adding products, where the business id is invalid.
 	 */
 	@Test
-	void addProductWithInvalidBusinessId() {
+	void addProductWithInvalidBusinessIdExpectBadRequest() {
+		setStateAsBusiness(business1);
+
 		ProductCreationRequest productCreationRequest = new ProductCreationRequest();
 		productCreationRequest.setName("milk");
 		productCreationRequest.setCategory("food");
@@ -164,9 +192,9 @@ class InventoryProductControllerTest extends IntegrationTest {
 	 * This checks for one product against a known list of products from this business which is of length 1.
 	 */
 	@Test
-	void retrieveProductFromBusiness() {
-
-		String URI = String.format("/api/products/business/%s", businessRepository.findAll().getFirst().getId().toString());
+	void retrieveProductFromBusinessExpectOk() {
+		UUID businessId = business1.getId();
+		String URI = String.format("/api/products/business/%s", businessId);
 
 		var responseBody = restTestClient.get()
 				.uri(URI)
@@ -186,7 +214,7 @@ class InventoryProductControllerTest extends IntegrationTest {
 	 * A test for retrieving all products from all businesses from the api/products/ root.
 	 */
 	@Test
-	void retrieveAllProducts() {
+	void retrieveAllProductsExpectOk() {
 
 		String URI = "/api/products";
 
@@ -208,7 +236,7 @@ class InventoryProductControllerTest extends IntegrationTest {
 	 * A test for retrieving a product by id from the api/products/{id} end-point.
 	 */
 	@Test
-	void retrieveProductById() {
+	void retrieveProductByIdExpectOk() {
 		Product product = productsRepository.findAll().getFirst();
 
 		String URI = String.format("/api/products/%s", product.getId());
@@ -231,7 +259,7 @@ class InventoryProductControllerTest extends IntegrationTest {
 	 * Expects: Fail - Bad Request 400.
 	 */
 	@Test
-	void retrieveProductByIdWithMalformedUUID() {
+	void retrieveProductByIdWithMalformedUUIDExpectBadRequest() {
 		String URI = String.format("/api/products/%s", NON_EXISTENT_PRODUCT_ID);
 
 		var responseBody = restTestClient.get()
@@ -243,11 +271,15 @@ class InventoryProductControllerTest extends IntegrationTest {
 	}
 
 	/**
-	 * A test for updating a product with varying differing attributes.
+	 * This test initially sets the state of the test mocking a request bearing the authorisation of Business 1.
+	 * This test ensures that business 1 can correctly update attributes of a product of business 1.
+	 * <p>
+	 * This test expects status code 200: OK.
 	 */
 	@Test
-	 void updateProduct() {
-		Product product = productsRepository.findAll().getFirst();
+	 void updateProductExpectOk() {
+		setStateAsBusiness(business1);
+		Product product = getFirstProductOfBusiness(business1);
 
 		ProductDetailUpdate detailUpdate = new ProductDetailUpdate();
 		detailUpdate.setName("milk");
@@ -269,7 +301,9 @@ class InventoryProductControllerTest extends IntegrationTest {
 	 * A test for updating a product with an invalid PRODUCT id.
 	 */
 	@Test
-	void updateProductWithInvalidId() {
+	void updateProductWithInvalidIdExpectBadRequest() {
+		setStateAsBusiness(business1);
+
 		ProductDetailUpdate detailUpdate = new ProductDetailUpdate();
 		detailUpdate.setName("milk");
 		detailUpdate.setCategory("food");
@@ -286,14 +320,10 @@ class InventoryProductControllerTest extends IntegrationTest {
 				.isBadRequest();
 	}
 
-	/**
-	 * A test for updating a product with an invalid BUSINESS id.
-	 */
 	@Test
-	void updateProductWithInvalidBusinessId() {
-
-		// TODO this doesnt work properly because it expects fail, but the business that this product belongs to, the RestTestClient currently acts as.
-		Product product = productsRepository.findAll().getFirst();
+	void updateProductOfAnotherBusinessExpectForbidden() {
+		setStateAsBusiness(business1);
+		Product product = getFirstProductOfBusiness(business2);
 		UUID productId = product.getId();
 
 		ProductDetailUpdate detailUpdate = new ProductDetailUpdate();
@@ -309,17 +339,47 @@ class InventoryProductControllerTest extends IntegrationTest {
 				.body(detailUpdate)
 				.exchange()
 				.expectStatus()
-				.isNotFound();
+				.isForbidden();
+	}
+
+	/**
+	 * A test for updating a product with an invalid BUSINESS id.
+	 */
+	@Test
+	void updateProductAsNonExistentBusinessExpectForbidden() {
+
+		// TODO this doesnt work properly because it expects fail, but the business that this product belongs to, the RestTestClient currently acts as.
+		Product product = productsRepository.findAll().getFirst();
+		UUID productId = product.getId();
+
+		ProductDetailUpdate detailUpdate = new ProductDetailUpdate();
+		detailUpdate.setName("milk");
+		detailUpdate.setCategory("food");
+		detailUpdate.setQuantity(25);
+		detailUpdate.setPrice(1400L);
+
+		String URI = String.format("/api/products/%s", productId);
+
+		restTestClient = restTestClientAsRandomBusiness();
+
+		restTestClient.put()
+				.uri(URI)
+				.body(detailUpdate)
+				.exchange()
+				.expectStatus()
+				.isForbidden();
 	}
 
 	/**
 	 * A test for updating a product with a negative price.
 	 */
 	@Test
-	void updateProductWithInvalidPrice() {
-		Product product = productsRepository.findAll().getFirst();
+	void updateProductWithInvalidPriceExpectBadRequest() {
+		setStateAsBusiness(business1);
+		Product product = getFirstProductOfBusiness(business1);
 		UUID productId = product.getId();
 
+		// set product update requests.
 		ProductDetailUpdate detailUpdate = new ProductDetailUpdate();
 		detailUpdate.setPrice(-199L);
 		detailUpdate.setQuantity(product.getQuantity());
@@ -327,7 +387,6 @@ class InventoryProductControllerTest extends IntegrationTest {
 		detailUpdate.setName(product.getName());
 
 		String URI = String.format("/api/products/%s", productId);
-
 		restTestClient.put()
 				.uri(URI)
 				.body(detailUpdate)
@@ -343,9 +402,9 @@ class InventoryProductControllerTest extends IntegrationTest {
 	 * Second check tests invalid product ID, then checks that the product is not deleted, returns NOT_FOUND: 404.
 	 */
 	@Test
-	void deleteProduct() {
-
-		Product product = productsRepository.findAll().getFirst();
+	void deleteProductExpectOk() {
+		setStateAsBusiness(business1);
+		Product product = getFirstProductOfBusiness(business1);
 		UUID productId = product.getId();
 
 		String URI = String.format("/api/products/%s", productId);
@@ -357,30 +416,36 @@ class InventoryProductControllerTest extends IntegrationTest {
 				.isOk();
 	}
 
-
-
 	@Test
-	void deleteProductWithInvalidProductId() {
+	void deleteProductWithInvalidProductIdExpectForbidden() {
 		String URI = String.format("/api/products/%s", NON_EXISTENT_PRODUCT_ID);
 
 		restTestClient.delete()
 				.uri(URI)
 				.exchange()
 				.expectStatus()
-				.isBadRequest();
+				.isForbidden();
 	}
 
+	/**
+	 * This method tests that a product cannot be deleted from a business that is not the owner of the product.
+	 * <p>
+	 * This method sets the state of the test mocking a request bearing the authorisation of Business 1.
+	 * <p>
+	 * This test expects status code 403: Forbidden.
+	 */
 	@Test
-	void deleteProductWithInvalidBusinessId() {
-		Product product = productsRepository.findAll().getFirst();
+	void deleteProductOfAnotherBusinessExpectForbidden() {
+		setStateAsBusiness(business1);
+		Product product = getFirstProductOfBusiness(business2);
 		UUID productId = product.getId();
 
-		String URI = String.format("/api/products/business/%s/%s", NON_EXISTENT_BUSINESS_ID, productId);
+		String URI = String.format("/api/products/%s", productId);
 
 		restTestClient.delete()
 				.uri(URI)
 				.exchange()
 				.expectStatus()
-				.isNotFound();
+				.isForbidden();
 	}
 }

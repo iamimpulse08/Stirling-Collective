@@ -12,12 +12,12 @@ import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-@CrossOrigin
 @RestController
 @RequestMapping({"api/products", "api/products/"})
 public class ProductController {
@@ -53,8 +53,8 @@ public class ProductController {
         return new ResponseEntity<>(productAssembler.toCollectionModel(products), HttpStatus.OK);
     }
 
-    /**
-     * Authorised actions
+    /*
+        SECURE ENDPOINTS - WRITE / UPDATE / DELETE
      */
 
     /**
@@ -64,6 +64,7 @@ public class ProductController {
      */
     // TODO Require correct business credentials + OAuth ?
     @PostMapping("/business/{businessID}")
+    @PreAuthorize("hasRole('BUSINESS') or hasRole('OPERATOR')")
     public ResponseEntity<EntityModel<Product>> addProduct
     (
             @RequestBody ProductCreationRequest request,
@@ -80,6 +81,7 @@ public class ProductController {
     }
 
     @PutMapping("/{productID}")
+    @PreAuthorize("hasRole('BUSINESS') or hasRole('OPERATOR')")
     public ResponseEntity<EntityModel<Product>> updateProduct
             (
             @RequestBody ProductDetailUpdate request,
@@ -97,6 +99,7 @@ public class ProductController {
 
 
     @DeleteMapping("/{productID}")
+    @PreAuthorize("hasRole('BUSINESS') or hasRole('OPERATOR')")
     public ResponseEntity<?> deleteProduct
             (
             @PathVariable UUID productID,

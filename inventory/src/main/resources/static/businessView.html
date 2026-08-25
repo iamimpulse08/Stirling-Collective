@@ -8,6 +8,7 @@
 
 <div id = "product-information">
     <button type="button" onclick="getAllProducts()">Fetch all products</button>
+    <button type="button" onclick="addProduct()">Add Product</button>
 </div>
 
 <pre id="output"></pre>
@@ -46,6 +47,24 @@
         });
 
         return table;
+    }
+
+    async function addProduct() {
+        let URL = applicationRoot + `api/` + `products`;
+        const output = document.getElementById("output");
+
+        await fetch(URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: "Test Product",
+                price: 100,
+                quantity: 10,
+                category: "Test Category"
+            })
+        })
     }
 
     async function getAllProducts() {

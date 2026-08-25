@@ -1,5 +1,6 @@
 package co.uk.stirling_index.inventory;
 
+import co.uk.stirling_index.inventory.model.business.Business;
 import co.uk.stirling_index.inventory.model.security.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -15,9 +16,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,8 +48,42 @@ public class IntegrationTest {
      */
     RestTestClient restTestClient;
 
+    /**
+     * This function sets the state of the RestTestClient to be authenticated as a random business, with a random business ID.
+     */
+    protected void setStateAsRandomBusiness() {
+        restTestClient = restTestClientAsRandomBusiness();
+    }
+
+    /**
+     * This function sets the state of the RestTestClient to be authenticated as a business, which is defined by the business parameter.
+     * @param business - The business to authenticate as.
+     * */
+    protected void setStateAsBusiness(Business business) {
+        restTestClient = restTestClientAsBusiness(business.getId());
+    }
+
+    protected RestTestClient setStateAsAnonymous() {
+        restTestClient = restTestClientAnonymous();
+        return restTestClient;
+    }
+
+    /**
+     * Test Server Domain and Port Information
+     */
     @LocalServerPort
     int port;
+    String baseDomain = "http://localhost:";
+
+    private String getBaseUrl() {
+        return baseDomain + port;
+    }
+
+    /**
+     * Rest Test Client Username / Emails
+     */
+    private final static String testEmail = "test-user@example.org";
+
 
     // fake IDs for consistent test case logic.
     final static String NON_EXISTENT_BUSINESS_ID = "NOT_A_REAL_UUID";
@@ -59,27 +91,43 @@ public class IntegrationTest {
 
     protected RestTestClient restTestClientAs(Role role) {
         return RestTestClient.bindToServer()
-                .baseUrl("http://localhost:" + port)
+                .baseUrl(getBaseUrl())
                 .defaultHeader(HttpHeaders.AUTHORIZATION,
                         "Bearer " +
-                                JwtTestUtilities.generateToken("test-user@example.org", role, null)
+                                JwtTestUtilities.generateToken(testEmail, role, null)
                 )
                 .build();
     }
 
     protected RestTestClient restTestClientAsBusiness(UUID businessId) {
         return RestTestClient.bindToServer()
-                .baseUrl("http://localhost:" + port)
-                .defaultHeader(HttpHeaders.AUTHORIZATION,
+                .baseUrl(getBaseUrl())
+                .defaultHeader(
+                        HttpHeaders.AUTHORIZATION,
                         "Bearer " +
-                                JwtTestUtilities.generateToken("test-user@example.org", Role.BUSINESS, businessId)
+                                JwtTestUtilities.generateToken(testEmail, Role.BUSINESS, businessId)
                 )
+                .build();
+    }
+
+    /**
+     * Configures a RestTestClient to be authenticated as a random business - with a random business ID.
+     * @return
+     */
+    protected RestTestClient restTestClientAsRandomBusiness() {
+        return RestTestClient.bindToServer()
+                .baseUrl(getBaseUrl())
+                .defaultHeader(
+                        HttpHeaders.AUTHORIZATION,
+                        "Bearer " +
+                                JwtTestUtilities.generateToken(testEmail, Role.BUSINESS, UUID.randomUUID())
+                        )
                 .build();
     }
 
     protected RestTestClient restTestClientAnonymous() {
         return RestTestClient.bindToServer()
-                .baseUrl("http://localhost:" + port)
+                .baseUrl(getBaseUrl())
                 .build();
     }
 

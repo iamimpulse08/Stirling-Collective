@@ -31,7 +31,7 @@ public class CustomUserPrinciple implements org.springframework.security.core.us
     }
 
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(user.getRole().name()));
+        return List.of(new SimpleGrantedAuthority(user.getRole().toString()));
     }
 
     @Override

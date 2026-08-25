@@ -1,5 +1,10 @@
 package co.uk.stirling_index.inventory.model.security;
 
+import lombok.Getter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+@Getter
 public enum Role {
     VIEWER("Viewer"),
     // by default, view-only role for general public / unauthenticaticated users
@@ -16,7 +21,8 @@ public enum Role {
         this.displayName = displayName;
     }
 
-    public String getDisplayName() {
-        return displayName;
+    public GrantedAuthority toGrantedAuthority() {
+        return new SimpleGrantedAuthority("ROLE_" + this.name());
     }
+
 }

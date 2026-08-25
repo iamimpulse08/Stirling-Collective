@@ -36,12 +36,12 @@ public class CustomUserPrinciple implements org.springframework.security.core.us
 
     @Override
     public @Nullable String getPassword() {
-        return "";
+        return user.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return "";
+        return user.getEmail();
     }
 
     @Override

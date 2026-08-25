@@ -12,6 +12,11 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 public class ApplicationConfig {
@@ -31,5 +36,26 @@ public class ApplicationConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+
+        CorsConfiguration AuthorisedConfig = new CorsConfiguration();
+        AuthorisedConfig.setAllowedOrigins(List.of("https://admin.crowcuriosities.co.uk"));
+        AuthorisedConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+        AuthorisedConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        AuthorisedConfig.setAllowCredentials(true);
+        source.registerCorsConfiguration("/api/auth/**", AuthorisedConfig);
+
+        CorsConfiguration publicConfig = new CorsConfiguration();
+        publicConfig.setAllowedOrigins(List.of("*"));
+        publicConfig.setAllowedMethods(List.of("GET"));
+        publicConfig.setAllowedHeaders(List.of("Content-Type"));
+        publicConfig.setAllowCredentials(false);
+        source.registerCorsConfiguration("/api/products/**", publicConfig);
+
+        return source;
     }
 }

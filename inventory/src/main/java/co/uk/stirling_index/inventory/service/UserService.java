@@ -5,6 +5,7 @@ import co.uk.stirling_index.inventory.model.security.Role;
 import co.uk.stirling_index.inventory.model.security.userdetails.User;
 import co.uk.stirling_index.inventory.service.repository.BusinessRepository;
 import co.uk.stirling_index.inventory.service.repository.UserRepository;
+import co.uk.stirling_index.inventory.service.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
@@ -29,4 +30,12 @@ public class UserService {
         user.setRole(Role.BUSINESS);
         userRepository.save(user);
     }
+
+    public void storeRefreshToken(UUID userId, JwtService.RefreshTokenResult refreshToken) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException(userId.toString()));
+
+
+    }
+
 }

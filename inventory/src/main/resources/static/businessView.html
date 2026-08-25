@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<div id = "product-information">
+    <button type="button" onclick="getAllProducts()">Fetch all products</button>
+</div>
+
+<pre id="output"></pre>
+
+</body>
+
+<script>
+
+    const applicationRoot = 'http://localhost:8080/';
+    const productsLinksMap = new Map();
+
+    async function populateProductsLinksMap() {
+        let products = await getAllProducts();
+    }
+
+    async function getRootLinks() {
+        let rootURIMap = new Map();
+    }
+
+    function buildTable(columns, rows) {
+        const table = document.createElement("table");
+        table.setAttribute("border", "1");
+
+        const headerRow = table.insertRow();
+
+        columns.forEach(column => {
+            const headerCell = headerRow.insertCell();
+            headerCell.textContent = column.label;
+        });
+
+        rows.forEach(row => {
+            const dataRow = table.insertRow();
+            columns.forEach(column => {
+                dataRow.insertCell().textContent = column.accessor(row);
+            });
+        });
+
+        return table;
+    }
+
+    async function getAllProducts() {
+        let URL = applicationRoot + `api/` + `products`;
+        const output = document.getElementById("output");
+
+        await fetch(URL)
+            .then(response => response.json())
+        .then(data => {
+            console.log(data);
+
+            const productColumns = [
+
+                { label: 'ID', accessor: p => p.id },
+                { label: 'Name', accessor: p => p.name },
+                { label: 'Price', accessor: p => p.price },
+                { label: 'Quantity', accessor: p => p.quantity },
+                { label: 'Category', accessor: p => p.category},
+            ];
+
+
+            output.innerHTML = ''
+            output.appendChild(buildTable(productColumns, data._embeddedd.productList));
+        });
+    }
+
+    async function createProductTable(data) {
+
+
+
+    }
+
+
+</script>
+
+</html>

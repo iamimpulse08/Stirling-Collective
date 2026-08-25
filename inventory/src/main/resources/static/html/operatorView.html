@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Operator View</title>
+</head>
+<body>
+<div id="wholesaler-functionality">
+    <!-- -->
+    <button type="button" onclick="fetchFromWholesaler()">Fetch from API</button>
+    <button type="button" onclick="getAllProducts()">Fetch All Products</button>
+    <button type="button" onclick="getAllOrders()">Fetch All Orders</button>
+</div>
+
+<div id="order-functionality">
+    <!-- -->
+    <label for="orderID">Order ID: </label><select id="orderID" placeholder="Order ID"></select>
+    <label for="status-type">Status Type: </label><select id="status-type">
+    <option value="out-of-stock">Out of Stock</option>
+    <option value="shipped">Shipped</option>
+    <option value="pending">Pending</option>
+    <!-- Pending is also an option in case the operator makes a mistake. -->
+</select>
+    <button type="button" onclick="updateOrderStatus()">Update Order Status</button>
+    <button type="button" onclick="getSingleOrder()">Search by ID</button>
+
+</div>
+
+<div id="product-functionality">
+    <!-- Where attribute is a selectable drop-down, which is auto-updated by API -->
+    <label for="productID">Product ID: </label><select id="productID" placeholder="Product ID"></select>
+    <label for="newProductValue">New Value: </label><input type="text" id="newProductValue" placeholder="..."/>
+
+    <!-- Have this auto update with each attribute in future -->
+    <label for="product-attribute">Attribute: </label>
+    <select id="product-attribute">
+        <option value="price">price</option>
+        <option value="description">description</option>
+        <option value="in_stock">quantity</option>
+        <option value="bestseller">bestseller</option>
+        <option value="category">category</option>
+    </select>
+    <button type="button" onclick="modifyProduct()">Update Attribute</button>
+    <button type="button" onclick="getSingleProduct()">Search by ID</button>
+    <button type="button" onclick="removeSingleProduct()">Remove Product By ID</button>
+</div>
+
+<div id="product-addition-functionality">
+    <p>Add new product below:</p>
+    <label for="product-id">Product ID: </label><input type="text" id="product-id">
+    <label for="product-description">Description: </label><input type="text" id="product-description">
+    <label for="product-category">Category: </label><input type="text" id="product-category">
+    <label for="in_stock">Quantity: </label><input type="text" id="in_stock">
+    <label for="price">Price: </label><input type="text" id="price">
+    <label for="bestseller">Best Seller: </label>
+    <select id="bestseller">
+        <option value="false">false</option>
+        <option value="true">true</option>
+    </select>
+    <button type="button" onclick="addProduct()">Add Product</button>
+</div>
+
+<div id="customer-functionality">
+    <button type="button" onclick="getCustomerDetails()">Fetch All Customer Details</button>
+</div>
+</body>
+<pre id="output">
+
+</pre>
+<script>
+
+    let productLinksMap = new Map();
+    let orderLinksMap = new Map();
+    const applicationRoot = 'http://localhost:8080/';
+
+    function removeSingleProduct() {
+        const productID = document.getElementById("productID").value;
+        const output = document.getElementById("output");
+        const links = productLinksMap.get(productID);
+
+        let URL = links.delete.href;
+
+        fetch(URL, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => {
+                if (response.status === 204) {
+                    output.innerHTML = "Successfully removed product with ID: " + productID + " from database."
+                }
+            })
+    }
+
+    function addProduct() {
+        const output = document.getElementById("output");
+        const productID = document.getElementById("product-id").value;
+        const description = document.getElementById("product-description").value;
+        const category = document.getElementById("product-category").value;
+        const quantity = document.getElementById("in_stock").value;
+        const price = document.getElementById("price").value;
+        const bestseller = document.getElementById("bestseller").value;
+        const links = productLinksMap.values().next().value; // get the first link in the map.
+
+        let url = links.addProduct.href;
+
+        try {
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: productID,
+                    description: description,
+                    category: category,
+                    in_stock: quantity,
+                    price: price,
+                    bestseller: bestseller
+                })
+            })
+                .then(response => {
+                    if (response.status === 200) {
+                        output.innerHTML = response.status + " Successfully added order with ID: " + productID;
+                    }
+                })
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+    function getCustomerDetails() {
+        let URL = `http://localhost:8080/orders/customer-details`;
+        const output = document.getElementById("output");
+
+        try {
+            fetch(URL)
+                .then(response => response.json())
+                .then(data => {
+                    output.innerHTML = JSON.stringify(data, null, 4);
+
+                    let newTable = "<table border='1'><tr>" +
+                        "<td>Full Name</td>" +
+                        "<td>Email</td>" +
+                        "<td>Postal Address</td>" +
+                        "<td>Total Revenue Generated</td>" +
+                        "</tr>"
+
+                    for (let customerDTO of data._embedded.customerDetailsDTOList) {
+                        newTable += "<td>" + customerDTO.fullName + "</td>"
+                        newTable += "<td>" + customerDTO.email + "</td>"
+                        newTable += "<td>" + customerDTO.postalAddress + "</td>"
+                        newTable += "<td>" + customerDTO.totalRevenueGenerated + "</td></tr>"
+                    }
+                    output.innerHTML = newTable;
+                })
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+    function getAllOrders() {
+        let URL = `http://localhost:8080/orders`;
+        const output = document.getElementById("output");
+
+        try {
+            fetch(URL)
+                .then(response => response.json())
+                .then(data => {
+                    output.innerHTML = JSON.stringify(data, null, 4);
+
+                    const orderIDSelector = document.getElementById("orderID")
+                    orderIDSelector.innerHTML = '';
+
+                    let newTable = "<table border='1'><tr>" +
+                        "<td>Product ID</td>" +
+                        "<td>Description</td>" +
+                        "<td>Total Price</td>" +
+                        "<td>Category</td>" +
+                        "<td>Quantity</td>" +
+                        "<td>Order ID</td>" +
+                        "<td>Status</td>" +
+                        "<td>Full Name</td>" +
+                        "<td>Email</td>" +
+                        "<td>Postal Address</td>" +
+                        "</tr>"
+
+                    for (let order of data._embedded.orderDetailDTOList) {
+
+                        //console.log(order)
+                        orderLinksMap.set(order.orderId.toString(), order._links);
+
+                        const option = document.createElement('option');
+                        option.value = order.orderId.toString(); // javascript type inference is questionable at best.
+                        option.innerHTML = order.orderId;
+                        orderIDSelector.append(option);
+
+                        newTable += "<tr><td>" + order.productId + "</td>"
+                        newTable += "<td>" + order.productDescription + "</td>"
+                        newTable += "<td>" + order.totalPrice + "</td>"
+                        newTable += "<td>" + order.productCategory + "</td>"
+                        newTable += "<td>" + order.productQuantity + "</td>"
+                        newTable += "<td>" + order.orderId + "</td>"
+                        newTable += "<td>" + order.status + "</td>"
+                        newTable += "<td>" + order.customerFullName + "</td>"
+                        newTable += "<td>" + order.email + "</td>"
+                        newTable += "<td>" + order.postalAddress + "</td></tr>"
+                    }
+
+                    newTable += "</table>"
+                    output.innerHTML = newTable
+                })
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+    function getAllProducts() {
+        let URL = `http://localhost:8080/products`;
+        const output = document.getElementById("output");
+        try {
+            fetch(URL)
+                .then(response => response.json())
+                .then(data => {
+
+                    //output.innerHTML = JSON.stringify(data, null, 4);
+                    const productIDSelector = document.getElementById('productID')
+                    productIDSelector.innerHTML = '';
+
+                    let newTable = "<table border='1'><tr>" +
+                        "<td>ID</td>" +
+                        "<td>Description</td>" +
+                        "<td>Category</td>" +
+                        "<td>Quantity</td>" +
+                        "<td>Price</td>" +
+                        "<td>Best-Seller</td>" +
+                        "</tr>"
+
+                    for (let product of data._embedded.productList) {
+                        productLinksMap.set(product.id, product._links);
+
+                        const option = document.createElement('option');
+                        option.value = product.id;
+                        option.innerHTML = product.id;
+                        productIDSelector.append(option);
+
+                        newTable += "<tr><td>" + product.id + "</td>"
+                        newTable += "<td>" + product.description + "</td>"
+                        newTable += "<td>" + product.category + "</td>"
+                        newTable += "<td>" + product.in_stock + "</td>"
+                        newTable += "<td>" + product.price + "</td>"
+                        newTable += "<td>" + product.bestseller + "</td></tr>"
+                    }
+
+                    newTable += "</table>"
+                    output.innerHTML=newTable
+                    // append to new table element inside of output.
+                })
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+    function getSingleProduct() {
+
+        const output = document.getElementById("output");
+        const productID = document.getElementById("productID").value;
+
+        if (productID == null || productID === '') { return; }
+
+        const links = productLinksMap.get(productID)
+
+        let URL = links.self.href;
+        try {
+            fetch(URL)
+                .then(response => response.json())
+                .then(data => {
+                    //output.innerHTML = JSON.stringify(data, null, 4);
+                    let newTable = "<table border='1'><tr>" +
+                        "<td>ID</td>" +
+                        "<td>Description</td>" +
+                        "<td>Category</td>" +
+                        "<td>Quantity</td>" +
+                        "<td>Price</td>" +
+                        "<td>Best-Seller</td>" +
+                        "</tr>"
+
+                    newTable += "<tr><td>" + data.id + "</td>"
+                    newTable += "<td>" + data.description + "</td>"
+                    newTable += "<td>" + data.category + "</td>"
+                    newTable += "<td>" + data.in_stock + "</td>"
+                    newTable += "<td>" + data.price + "</td>"
+                    newTable += "<td>" + data.bestseller + "</td></tr>"
+
+                    newTable += "</table>"
+                    output.innerHTML=newTable
+                    // append to new table element inside of output.
+
+
+                })
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+    function getSingleOrder() {
+
+        const output = document.getElementById("output");
+        const orderID = document.getElementById("orderID").value;
+
+        if (orderID == null || orderID === '') { return; }
+
+        const links = orderLinksMap.get(orderID);
+
+        let URL = links.self.href
+        try {
+            fetch(URL)
+                .then(response => response.json())
+                .then(data => {
+                    //console.log(JSON.stringify(data));
+
+                    let newTable = "<table border='1'><tr>" +
+                        "<td>Product ID</td>" +
+                        "<td>Description</td>" +
+                        "<td>Total Price</td>" +
+                        "<td>Category</td>" +
+                        "<td>Quantity</td>" +
+                        "<td>Order ID</td>" +
+                        "<td>Status</td>" +
+                        "<td>Full Name</td>" +
+                        "<td>Email</td>" +
+                        "<td>Postal Address</td>" +
+                        "</tr>"
+
+                    newTable += "<tr><td>" + data.productId + "</td>"
+                    newTable += "<td>" + data.productDescription + "</td>"
+                    newTable += "<td>" + data.totalPrice + "</td>"
+                    newTable += "<td>" + data.productCategory + "</td>"
+                    newTable += "<td>" + data.productQuantity + "</td>"
+                    newTable += "<td>" + data.orderId + "</td>"
+                    newTable += "<td>" + data.status + "</td>"
+                    newTable += "<td>" + data.customerFullName + "</td>"
+                    newTable += "<td>" + data.email + "</td>"
+                    newTable += "<td>" + data.postalAddress + "</td></tr>"
+
+                    newTable += "</table>"
+                    output.innerHTML=newTable
+                    // append to new table element inside of output.
+                })
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+    function updateOrderStatus() {
+        const orderID = document.getElementById("orderID").value;
+
+        if (orderID == null || orderID === '') { return; }
+
+        const newOrderStatus = document.getElementById("status-type").value;
+        const links = orderLinksMap.get(orderID);
+        const output = document.getElementById("output");
+
+        let URL = links.editStatus.href;
+
+        try {
+            fetch(URL, {
+                method: "PUT",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: newOrderStatus,
+                })
+                // if response ok, clear values, display status code in output
+            })
+                .then(response => {
+                    if (response.status === 200) {
+                        output.innerHTML = "Successfully modified order " + orderID;
+                    }
+                })
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+
+    // what if I fetch the object as a get request first, map all its parameters into the put request,
+    // but modify only the parameter that is to change (?)
+    function modifyProduct() {
+        const attributeToModify = document.getElementById("product-attribute").value;
+        const productID = document.getElementById("productID").value;
+
+        if (productID == null || productID === '') { return; }
+
+        const newProductValue = document.getElementById("newProductValue").value;
+        const productLinks = productLinksMap.get(productID);
+
+        let URL = productLinks.update.href;
+
+        try {
+            fetch(URL, {
+                method: "PUT",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    attributeName: attributeToModify,
+                    newValue: newProductValue
+                })
+                // if response ok, clear values
+            })
+                .then(response => {
+                    if (response.status === 200) {
+
+                    }
+                })
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchFromWholesaler();
+    })
+
+    function fetchFromWholesaler() {
+        const output = document.getElementById("output");
+        let URL = `http://localhost:8080/`;
+        let assignmentURI = `https://pmaier.eu.pythonanywhere.com/wss`;
+        // try to perform automatic order profitability/stock check first.
+
+        try {
+            // retrieve from wss
+            fetch(assignmentURI)
+                .then(response => {
+                    if (response.status !== 200) {
+                        console.log(`Function call resulted in ${response.status} for Root`);
+                    }
+                    return response.json();
+                })
+                .then(categoryData => {
+                    if (!categoryData) {
+                        console.error(categoryData);
+                    }
+                    // this grabs the actual category inside the embedded links.
+                    for (category of categoryData._embedded.categories) {
+                        //console.log(category.category); -> Category name, maybe useful in future (?)
+                        fetchProductsFromCategory(category._links.self.href);
+                    }
+                });
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+
+        try {
+            // after it's done syncing, check every order, for profitability, and stock levels.
+            fetch(URL+"orders/checkAll", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+        }
+        catch (error) {
+            console.error("Error: ", error);
+        }
+    }
+
+    function fetchProductsFromCategory(URI) {
+        try {
+            fetch(URI)
+                .then(response => {
+                    if (response.status !== 200) {
+                        console.error(`Function call resulted in ${response.status} for category: ` + URI);
+                        return;
+                    }
+                    return response.json();
+                })
+                .then(productURIData => {
+                    // check if the URI actually exists before execution.
+                    if (!productURIData) {
+                        return;
+                    }
+                    //console.log('Product Data \n' + JSON.stringify(productURIData))
+
+                    for (product of productURIData._embedded.products) {
+                        //console.log(JSON.stringify(product)); <- URI data.
+                        // provides: category, description, id, in_stock (quantity), price
+                        let uri = product._links.self.href;
+                        fetch(uri)
+                            .then(response => {
+                                if (response.status !== 200) {
+                                    console.error(`Function call resulted in ${response.status} for product: ` + uri);
+                                    // here should send a single check request rather than iterating over ever element.
+                                    // design issue, should check ONCE for product, checking all orders that match the criteria
+                                    // then should check ALL orders in post, to ensure profitability.
+
+                                    // this grabs the last attribute (the product ID) from the URI provided - technically this is hard-coded, but as long as WSS didn't change their URL this function would work.
+                                    const productID = uri.split("/").pop();
+                                    // call get product by product ID, if it returns something, we know it was previously in the database.
+                                    fetch(applicationRoot+`products/${encodeURIComponent(productID)}`)
+                                        .then(response => {
+                                            // if there was a retrieval, perform a check on springboot db.
+                                            // since it was previously in the database, we know that it has been removed by the wholesaler at the point of this function call.
+                                            if (response.status === 200) {
+                                                fetch(applicationRoot+`orders/check/${encodeURIComponent(productID)}`, {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json'
+                                                    }
+                                                })
+                                                    .then(response => {
+                                                        if (response.status === 204) {
+                                                            // successful if no content code.
+                                                            console.log("Successfully checked all orders pertaining to Product ID: " + productID);
+                                                        }
+                                                    })
+                                            } else if (response.status === 404) {
+                                                console.log("GET request resulted in no product returned for product ID:" + productID);
+                                            }
+                                        })
+                                    return;
+                                }
+                                return response.json();
+                            })
+                            .then(productData => {
+                                sendToSpringDB(productData);
+                            });
+                    }
+                });
+        } catch(error) {
+            console.error('Error: ', error);
+        }
+    }
+
+    // This sends the final JSON object to the products/sync PostMapping inside Spring-Boot ProductController.
+    function sendToSpringDB(productData) {
+        if (!productData) {
+            console.error('Cannot send undefined product data to Spring Database.');
+            return;
+        }
+        // send to spring-boot H2 - replaced sync path with add, since its literally the same thing.
+        fetch(applicationRoot+"products", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(productData)
+        })
+    }
+</script>
+</html>

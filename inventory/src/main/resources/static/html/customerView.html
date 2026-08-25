@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer View</title>
+</head>
+<body>
+<div id="Product-Information">
+    <button type="button" onclick="getAllProducts()">Fetch all products from drop-shipper</button>
+</div>
+<div id="Customer Information">
+    <label for="email">Email Address: </label><input type="text" id="email" placeholder="JohnSmith@gmail.com">
+</div>
+<div id="Order Placement Functionality">
+    <label for="productID">Product ID: </label><select id="productID" placeholder="Product ID"></select>
+    <label for="quantity"></label>Quantity: <input type="text" id="quantity" placeholder="quantity required">
+    <button type="button" onclick="submitOrder()">Place Order</button>
+</div>
+
+<div id="Order Retrieval Functionality">
+    <label for="orderID">Order ID: </label><select id="orderID" placeholder="Order ID"></select>
+    <button type="button" onclick="getSingleOrder()">Retrieve Order</button>
+    <button type="button" onclick="getAllCustomerOrders()">Get All Your Orders</button>
+    <button type="button" onclick="cancelOrder()">Cancel Order</button>
+</div>
+
+</body>
+<pre id="output">
+
+</pre>
+<script>
+
+    let productLinksMap = new Map();
+    let orderLinksMap = new Map();
+    const applicationRoot = 'http://localhost:8080/';
+
+    function cancelOrder() {
+        const orderID = document.getElementById("orderID").value;
+        const customerEmail = document.getElementById("email").value;
+        const links = orderLinksMap.get(orderID);
+
+        let URL = links.cancelOrder.href;
+        const output = document.getElementById("output");
+
+        try {
+            fetch(URL, {
+                method: "DELETE",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    orderID: orderID,
+                    customerEmail: customerEmail
+                })
+            })
+                .then(response => {
+                    if (response.status === 204) {
+                        output.innerHTML = response.status + ' Successfully cancelled order.';
+                    }
+                    else if (response.status === 400) {
+                        output.innerHTML = response.status + " Failed to cancel order as order with that ID does not exist, or request is malformed.";
+                    }
+                    else if (response.status === 409) {
+                        output.innerHTML = response.status + "Could not cancel order as order has already shipped."
+                    }
+                })
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+    // get all products on the website.
+    function getAllProducts() {
+        let URL = applicationRoot+`products`;
+        const output = document.getElementById("output");
+        try {
+            fetch(URL)
+                .then(response => response.json())
+                .then(data => {
+
+                    //output.innerHTML = JSON.stringify(data, null, 4);
+                    const productIDSelector = document.getElementById('productID')
+                    productIDSelector.innerHTML = '';
+
+                    let newTable = "<table border='1'><tr>" +
+                        "<td>ID</td>" +
+                        "<td>Description</td>" +
+                        "<td>Category</td>" +
+                        "<td>Quantity</td>" +
+                        "<td>Price</td>" +
+                        "<td>Best-Seller</td>" +
+                        "</tr>"
+
+                    for (let product of data._embedded.productList) {
+                        productLinksMap.set(product.id, product._links);
+
+                        const option = document.createElement('option');
+                        option.value = product.id;
+                        option.innerHTML = product.id;
+                        productIDSelector.append(option);
+
+                        newTable += "<tr><td>" + product.id + "</td>"
+                        newTable += "<td>" + product.description + "</td>"
+                        newTable += "<td>" + product.category + "</td>"
+                        newTable += "<td>" + product.in_stock + "</td>"
+                        newTable += "<td>" + product.price + "</td>"
+                        newTable += "<td>" + product.bestseller + "</td></tr>"
+                    }
+
+                    newTable += "</table>"
+                    output.innerHTML=newTable
+                    // append to new table element inside of output.
+                })
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+    // get the customers single order by ID
+    function getSingleOrder() {
+
+        const output = document.getElementById("output");
+        const orderID = document.getElementById("orderID").value;
+        const links = orderLinksMap.get(orderID);
+
+        let URL = links.self.href;
+        try {
+            fetch(URL)
+                .then(response => response.json())
+                .then(data => {
+                    //console.log(JSON.stringify(data));
+
+                    let newTable = "<table border='1'><tr>" +
+                        "<td>Product ID</td>" +
+                        "<td>Description</td>" +
+                        "<td>Total Price</td>" +
+                        "<td>Category</td>" +
+                        "<td>Quantity</td>" +
+                        "<td>Order ID</td>" +
+                        "<td>Status</td>" +
+                        "<td>Full Name</td>" +
+                        "<td>Email</td>" +
+                        "<td>Postal Address</td>" +
+                        "</tr>"
+
+                    newTable += "<tr><td>" + data.productId + "</td>"
+                    newTable += "<td>" + data.productDescription + "</td>"
+                    newTable += "<td>" + data.totalPrice + "</td>"
+                    newTable += "<td>" + data.productCategory + "</td>"
+                    newTable += "<td>" + data.productQuantity + "</td>"
+                    newTable += "<td>" + data.orderId + "</td>"
+                    newTable += "<td>" + data.status + "</td>"
+                    newTable += "<td>" + data.customerFullName + "</td>"
+                    newTable += "<td>" + data.email + "</td>"
+                    newTable += "<td>" + data.postalAddress + "</td></tr>"
+
+                    newTable += "</table>"
+                    output.innerHTML=newTable
+                    // append to new table element inside of output.
+                })
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+    // get the customers single order by ID
+    function getAllCustomerOrders() {
+
+        const output = document.getElementById("output");
+        const customerEmail = document.getElementById("email").value;
+
+        // this one has to be hard-coded.
+        let URL = applicationRoot + `orders/customer/${encodeURIComponent(customerEmail)}`;
+
+        try {
+            fetch(URL)
+                .then(response => response.json())
+                .then(data => {
+                    output.innerHTML = JSON.stringify(data, null, 4);
+
+                    const orderIDSelector = document.getElementById("orderID")
+                    orderIDSelector.innerHTML = '';
+
+                    let newTable = "<table border='1'><tr>" +
+                        "<td>Product ID</td>" +
+                        "<td>Description</td>" +
+                        "<td>Total Price</td>" +
+                        "<td>Category</td>" +
+                        "<td>Quantity</td>" +
+                        "<td>Order ID</td>" +
+                        "<td>Status</td>" +
+                        "<td>Full Name</td>" +
+                        "<td>Email</td>" +
+                        "<td>Postal Address</td>" +
+                        "</tr>"
+
+                    for (let order of data._embedded.orderDetailDTOList) {
+
+                        //console.log(order)
+                        orderLinksMap.set(order.orderId.toString(), order._links);
+
+                        const option = document.createElement('option');
+                        option.value = order.orderId.toString(); // javascript type inference is questionable at best.
+                        option.innerHTML = order.orderId;
+                        orderIDSelector.append(option);
+
+                        newTable += "<tr><td>" + order.productId + "</td>"
+                        newTable += "<td>" + order.productDescription + "</td>"
+                        newTable += "<td>" + order.totalPrice + "</td>"
+                        newTable += "<td>" + order.productCategory + "</td>"
+                        newTable += "<td>" + order.productQuantity + "</td>"
+                        newTable += "<td>" + order.orderId + "</td>"
+                        newTable += "<td>" + order.status + "</td>"
+                        newTable += "<td>" + order.customerFullName + "</td>"
+                        newTable += "<td>" + order.email + "</td>"
+                        newTable += "<td>" + order.postalAddress + "</td></tr>"
+                    }
+
+                    newTable += "</table>"
+                    output.innerHTML = newTable
+                })
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+    function submitOrder() {
+
+        const output = document.getElementById("output");
+        const productID = document.getElementById("productID").value;
+        const productQuantity = document.getElementById("quantity").value;
+        const customerEmail = document.getElementById("email").value;
+
+        // sadly can't use links provided by web-service, as they require an Order.
+        //console.log(JSON.stringify({productID: productID, quantity: productQuantity, customerEmail: customerEmail}))
+        try {
+            fetch(applicationRoot + "orders/submit", {
+                method: "POST",
+                headers: {
+
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    productID: productID,
+                    quantity: productQuantity,
+                    customerEmail: customerEmail
+                })
+
+                // if response ok, clear values, display status code in output
+            })
+                .then(response => response.json())
+                .then(data => {
+                    output.innerHTML = "Order Placed with ID: " + JSON.stringify(data.id);
+                })
+
+        }
+        catch (error) {
+            console.error('Error: ', error);
+        }
+    }
+
+
+</script>
+</html>

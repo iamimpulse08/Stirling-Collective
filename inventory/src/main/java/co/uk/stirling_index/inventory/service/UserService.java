@@ -31,11 +31,20 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public void storeRefreshToken(UUID userId, JwtService.RefreshTokenResult refreshToken) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UsernameNotFoundException(userId.toString()));
+    public String createAccount(String email) {
 
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("Account already exists for email: " + email);
+        }
 
+        String tempPassword = UUID.randomUUID().toString();
+
+        User user = new User();
+        user.setEmail(email);
+        user.setPassword(tempPassword);
+        user.setRole(Role.VIEWER);
+        userRepository.save(user);
+
+        return tempPassword;
     }
-
 }

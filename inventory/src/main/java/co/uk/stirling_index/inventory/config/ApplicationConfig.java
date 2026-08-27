@@ -3,6 +3,7 @@ package co.uk.stirling_index.inventory.config;
 import co.uk.stirling_index.inventory.service.security.ExtendedUserDetailsService;
 import co.uk.stirling_index.inventory.service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,12 +39,22 @@ public class ApplicationConfig {
         return config.getAuthenticationManager();
     }
 
+    @Value("${app.cors.allowed-origins}")
+    private List<String> allowedOrigins;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
+        CorsConfiguration authConfig = new CorsConfiguration();
+        authConfig.setAllowedOrigins(allowedOrigins);
+        authConfig.setAllowedMethods(List.of("POST", "GET", "PUT", "DELETE"));
+        authConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        authConfig.setAllowCredentials(true);
+        source.registerCorsConfiguration("/api/auth/**", authConfig);
+
         CorsConfiguration writeConfig = new CorsConfiguration();
-        writeConfig.setAllowedOrigins(List.of("https://admin.crowcuriosities.co.uk"));
+        writeConfig.setAllowedOrigins(allowedOrigins);
         writeConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
         writeConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         writeConfig.setAllowCredentials(false);

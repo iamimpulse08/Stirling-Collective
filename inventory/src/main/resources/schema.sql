@@ -20,7 +20,7 @@ create table IF NOT EXISTS products (
     foreign key (business_id) references businesses(id)
 );
 
-CREATE INDEX products_business_id_idx ON products (business_id);
+CREATE INDEX IF NOT EXISTS products_business_id_idx ON products (business_id);
 
 create table IF NOT EXISTS users (
     id UUID PRIMARY KEY,
@@ -39,6 +39,7 @@ create table IF NOT EXISTS refresh_tokens (
     created TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX refresh_tokens_revoked_idx ON refresh_tokens (revoked);
-CREATE INDEX refresh_tokens_expiration_idx ON refresh_tokens (expiration);
-CREATE INDEX refresh_tokens_user_id_idx ON refresh_tokens (user_id);
+CREATE INDEX IF NOT EXISTS refresh_tokens_revoked_idx ON refresh_tokens (revoked);
+CREATE INDEX IF NOT EXISTS refresh_tokens_expiration_idx ON refresh_tokens (expiration);
+CREATE INDEX IF NOT EXISTS refresh_tokens_user_id_idx ON refresh_tokens (user_id);
+
